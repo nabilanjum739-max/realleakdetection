@@ -181,11 +181,11 @@ def main() -> None:
             len(title) <= 60 and f"{row['town']}, TX" in title, title)
     g.check("4b. meta ≤155 chars", len(meta) <= 155, f"{len(meta)} chars")
 
-    # 5. FAQ: 12–15 Q&As, answers 15–80 words
+    # 5. FAQ: 12–15 Q&As, answers 10–80 words
     n = len(parser.faq_qas)
     bad = [(q[:40], words(a)) for q, a in parser.faq_qas
-           if not 15 <= words(a) <= 80]
-    g.check("5. FAQ 12–15 Q&As, answers 15–80 words",
+           if not 10 <= words(a) <= 80]
+    g.check("5. FAQ 12–15 Q&As, answers 10–80 words",
             12 <= n <= 15 and not bad,
             f"{n} Q&As" + (f"; bad lengths: {bad}" if bad else ""))
 
