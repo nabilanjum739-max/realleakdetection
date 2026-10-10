@@ -184,10 +184,14 @@ def census_housing(state_fips: str, place_fips: str) -> dict | None:
     r = requests.get("https://api.census.gov/data/2023/acs/acs5", params=params,
                      headers=UA, timeout=30)
     if r.status_code != 200:
+        print(f"   census API HTTP {r.status_code} (key valid?)")
         return None
     try:
         rows = r.json()
     except ValueError:
+        print("   WARNING: Census API returned non-JSON — CENSUS_API_KEY is "
+              "probably missing or invalid (free key: "
+              "https://api.census.gov/data/key_signup.html)")
         return None
     if len(rows) < 2:
         return None
