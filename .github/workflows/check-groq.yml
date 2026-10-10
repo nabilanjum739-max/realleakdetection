@@ -19,6 +19,11 @@ jobs:
             echo "GROQ_API_KEY secret is missing or empty."
             exit 1
           fi
+          echo "Secret length: ${#GROQ_API_KEY} characters"
+          case "$GROQ_API_KEY" in
+            gsk_*) echo "Format: starts with gsk_ (looks right)" ;;
+            *) echo "Format: does NOT start with gsk_ (wrong value pasted?)"; exit 1 ;;
+          esac
           CODE=$(curl -s -o /tmp/out.json -w "%{http_code}" \
             -H "Authorization: Bearer $GROQ_API_KEY" \
             https://api.groq.com/openai/v1/models)
