@@ -9,6 +9,8 @@ import { BRAND, PHONE_DISPLAY, PHONE_TEL, SITE_URL, buildAlt, buildMetaDescripti
 import { townSchemas } from "@/lib/schema";
 import CtaBand from "@/components/CtaBand";
 import TownDataSnapshot from "@/components/TownDataSnapshot";
+import TownVisuals from "@/components/TownVisuals";
+import LeakChecker from "@/components/LeakChecker";
 
 import { cacheLife } from "next/cache";
 
@@ -148,8 +150,14 @@ export default async function TownPage({ params }: { params: Promise<Params> }) 
         </div>
       </section>
 
+      {/* INTERACTIVE LEAK CHECK — lead-gen screening tool */}
+      <LeakChecker town={name} />
+
       {/* HYPER-LOCAL RESEARCH — visible even before the Grok article exists */}
       {row && <TownDataSnapshot row={row} />}
+
+      {/* API FIGURES — graphical, rendered only when enrichment has run */}
+      {row && <TownVisuals row={row} />}
 
       {/* GUIDE */}
       <section id="guide" className="scroll-mt-20 bg-white">
