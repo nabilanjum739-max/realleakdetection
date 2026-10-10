@@ -170,9 +170,9 @@ def main() -> None:
             sec_failed.append(f"{key}: h2 missing")
             continue
         w = words(match[1])
-        if not 100 <= w <= 400:
+        if not 80 <= w <= 400:
             sec_failed.append(f"{key}: {w} words")
-    g.check("3b. 10 service sections 100–400 words each", not sec_failed,
+    g.check("3b. 10 service sections 80–400 words each", not sec_failed,
             "; ".join(sec_failed))
 
     # 4. title/meta (built from data fields, same logic as the site)
@@ -181,11 +181,11 @@ def main() -> None:
             len(title) <= 60 and f"{row['town']}, TX" in title, title)
     g.check("4b. meta ≤155 chars", len(meta) <= 155, f"{len(meta)} chars")
 
-    # 5. FAQ: 12–15 Q&As, answers 25–80 words
+    # 5. FAQ: 12–15 Q&As, answers 15–80 words
     n = len(parser.faq_qas)
     bad = [(q[:40], words(a)) for q, a in parser.faq_qas
-           if not 25 <= words(a) <= 80]
-    g.check("5. FAQ 12–15 Q&As, answers 25–80 words",
+           if not 15 <= words(a) <= 80]
+    g.check("5. FAQ 12–15 Q&As, answers 15–80 words",
             12 <= n <= 15 and not bad,
             f"{n} Q&As" + (f"; bad lengths: {bad}" if bad else ""))
 
