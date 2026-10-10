@@ -77,26 +77,69 @@ def epa_water_systems(lat: float, lon: float) -> list:
     )
 
 # ---------------------------------------------------------------- 1. geocode
-def geocode(town: str, state: str = "TX"):
-    """Census Geocoder: 'Katy, TX' -> (lat, lon, place_fips). Free, no key."""
-    url = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
-    r = requests.get(url, params={
-        "address": f"{town}, {state}",
-        "benchmark": "Public_AR_Current",
-        "format": "json",
+# NOTE: the Census Geocoder "onelineaddress" endpoint is for STREET
+# addresses — "Katy, TX" returns zero matches. For place names we use
+# the Census place gazetteer (every incorporated place + CDP in Texas,
+# with lat/lon + GEOID), falling back to Nominatim for unincorporated
+# communities like Cypress.
+_GAZETTEER_URL = ("https://www2.census.gov/geo/docs/maps-data/data/"
+                  "gazetteer/2023_Gazetteer/2023_gaz_place_48.txt")
+_gaz_cache = None
+
+
+def _load_gazetteer() -> dict:
+    """Texas place gazetteer -> {'katy': {lat, lon, place_fips}, ...}."""
+    global _gaz_cache
+    if _gaz_cache is None:
+        r = requests.get(_GAZETTEER_URL, headers=UA, timeout=60)
+        r.raise_for_status()
+        lines = r.text.splitlines()
+        cols = lines[0].split("\t")
+        idx = {h.strip(): i for i, h in enumerate(cols)}
+        places = {}
+        for line in lines[1:]:
+            parts = line.split("\t")
+            # "Katy city, Texas" -> "katy"; "The Woodlands CDP, Texas"
+            # -> "the woodlands"
+            short = parts[idx["NAME"]].split(",")[0].strip().lower()
+            for suffix in (" city", " town", " village", " cdp"):
+                if short.endswith(suffix):
+                    short = short[: -len(suffix)]
+                    break
+            geoid = parts[idx["GEOID"]]
+            places[short] = {
+                "lat": float(parts[idx["INTPTLAT"]]),
+                "lon": float(parts[idx["INTPTLONG"]]),
+                "place_fips": geoid[2:],  # drop 2-digit state prefix
+            }
+        _gaz_cache = places
+    return _gaz_cache
+
+
+def _nominatim(town: str, state: str = "TX") -> dict | None:
+    """Fallback geocoder for unincorporated communities (no place FIPS)."""
+    import time
+    time.sleep(1)  # Nominatim usage policy: max 1 req/sec
+    r = requests.get("https://nominatim.openstreetmap.org/search", params={
+        "q": f"{town}, {state}, USA", "format": "json", "limit": 1,
     }, headers=UA, timeout=30)
     r.raise_for_status()
-    matches = r.json().get("result", {}).get("addressMatches", [])
-    if not matches:
+    data = r.json()
+    if not data:
         return None
-    m = matches[0]
-    geos = m.get("geographies", {}).get("Census Blocks", [{}])[0]
-    place = (geos.get("PLACE") or [{}])[0]
-    return {
-        "lat": m["coordinates"]["y"],
-        "lon": m["coordinates"]["x"],
-        "place_fips": place.get("GEOID", "")[-5:] or None,  # state(2)+place(5)
-    }
+    return {"lat": float(data[0]["lat"]), "lon": float(data[0]["lon"]),
+            "place_fips": None}
+
+
+def geocode(town: str, state: str = "TX"):
+    """'Katy' -> (lat, lon, place_fips). Gazetteer first, Nominatim fallback."""
+    hit = _load_gazetteer().get(town.strip().lower())
+    if hit:
+        return hit
+    try:
+        return _nominatim(town, state)
+    except Exception:
+        return None
 
 # ---------------------------------------------------------------- 2. climate
 def climate(lat: float, lon: float) -> dict:
