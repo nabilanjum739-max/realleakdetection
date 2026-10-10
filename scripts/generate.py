@@ -10,7 +10,7 @@ Validation happens separately (validate.py) — nothing publishes
 without passing the gate.
 
 Usage:
-    python scripts/generate.py --metro houston --town katy [--model llama-3.3-70b-versatile]
+    python scripts/generate.py --metro houston --town katy [--model openai/gpt-oss-120b]
 
 Env: GROQ_API_KEY (required), GROQ_MODEL (optional, overrides --model).
 """
@@ -25,7 +25,7 @@ import requests
 from common import RESEARCH_COLUMNS, get_supabase, get_town_row
 
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 SYSTEM_PROMPT = """You are a local-service copywriter. You receive ONE JSON object: a town's
 18-field data row plus this template. Rules:
