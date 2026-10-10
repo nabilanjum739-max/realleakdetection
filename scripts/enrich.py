@@ -179,8 +179,11 @@ def census_housing(state_fips: str, place_fips: str) -> dict | None:
         "in": f"state:{state_fips}",
     }
     key = os.environ.get("CENSUS_API_KEY")
-    if key:
-        params["key"] = key
+    if not key:
+        print("   WARNING: CENSUS_API_KEY env var is EMPTY — the repo secret "
+              "is not set or not reaching this workflow")
+        return None
+    params["key"] = key
     r = requests.get("https://api.census.gov/data/2023/acs/acs5", params=params,
                      headers=UA, timeout=30)
     if r.status_code != 200:
