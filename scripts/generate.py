@@ -120,7 +120,6 @@ def call_llm(system: str, user: str, model: str) -> dict:
         "messages": [{"role": "system", "content": system},
                      {"role": "user", "content": user}],
         "temperature": 0.4,
-        "response_format": {"type": "json_object"},
     }, timeout=300)
     r.raise_for_status()
     content = r.json()["choices"][0]["message"]["content"]
