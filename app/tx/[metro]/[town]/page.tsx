@@ -8,6 +8,7 @@ import { getTown, getSiblings } from "@/lib/supabase";
 import { BRAND, PHONE_DISPLAY, PHONE_TEL, SITE_URL, buildAlt, buildMetaDescription, buildTitle } from "@/lib/site";
 import { townSchemas } from "@/lib/schema";
 import CtaBand from "@/components/CtaBand";
+import TownDataSnapshot from "@/components/TownDataSnapshot";
 
 import { cacheLife } from "next/cache";
 
@@ -146,6 +147,9 @@ export default async function TownPage({ params }: { params: Promise<Params> }) 
           </div>
         </div>
       </section>
+
+      {/* HYPER-LOCAL RESEARCH — visible even before the Grok article exists */}
+      {row && <TownDataSnapshot row={row} />}
 
       {/* GUIDE */}
       <section id="guide" className="scroll-mt-20 bg-white">
