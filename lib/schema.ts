@@ -1,118 +1,83 @@
-import type { TownRow } from "./supabase";
-import { BRAND, SITE_URL } from "./site";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { cacheLife } from "next/cache";
+
+let client: SupabaseClient | null | undefined;
 
 /**
- * JSON-LD schema builders — all five types from TEMPLATE.md §15.
- * LocalBusiness uses areaServed (town + ZIPs), never a fake street address.
- * All strings are escaped for safe JSON-LD embedding (see usage with
- * .replace(/</g, '\\u003c') per Next.js json-ld guide).
+ * Server-side Supabase client. Returns null when env vars are missing
+ * (e.g. local build before the project exists) so `npm run build`
+ * succeeds and pages render placeholders.
  */
-
-function zips(row: TownRow): string[] {
-  return (row.zip_codes || "")
-    .split(";")
-    .map((z) => z.trim())
-    .filter(Boolean);
+export function getSupabase(): SupabaseClient | null {
+  if (client !== undefined) return client;
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) {
+    client = null;
+    return null;
+  }
+  client = createClient(url, key);
+  return client;
 }
 
-export function localBusinessSchema(row: TownRow) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    name: `${BRAND} — Leak Detection in ${row.town}, TX`,
-    url: `${SITE_URL}/tx/${row.metro_slug}/${row.town_slug}/`,
-    areaServed: [
-      { "@type": "City", name: `${row.town}, TX` },
-      ...zips(row).map((z) => ({ "@type": "PostalCode", postalCode: z })),
-    ],
-    telephone: process.env.NEXT_PUBLIC_PHONE_DISPLAY || undefined,
-  };
+export interface TownRow {
+  town: string;
+  parent_metro: string;
+  state: string;
+  town_slug: string;
+  metro_slug: string;
+  zip_codes: string | null;
+  soil_type: string | null;
+  soil_leak_note: string | null;
+  foundation_types: string | null;
+  housing_era: string | null;
+  common_pipe_materials: string | null;
+  neighborhoods: string | null;
+  price_leak_detection: string | null;
+  price_slab_detection: string | null;
+  price_sewer_camera: string | null;
+  permit_note: string | null;
+  water_utility: string | null;
+  climate_note: string | null;
+  seasonal_angle: string | null;
+  competitor_gap: string | null;
+  census_median_year_built: number | null;
+  census_homes_pre1980_pct: number | null;
+  rainfall_annual_in: number | null;
+  freeze_days_per_year: number | null;
+  days_over_100f: number | null;
+  soil_clay_pct: number | null;
+  water_system_epa: string | null;
+  page_html: string | null;
+  page_status: string | null;
+  omission_log: Record<string, unknown> | null;
 }
 
-export function faqPageSchema(row: TownRow) {
-  // Scaffold: generic data-driven questions. The generated page_html
-  // carries the full 12–15 town-specific Q&As (TEMPLATE.md §14); a
-  // future enhancement extracts them into this schema automatically.
-  const town = row.town;
-  const price = (row.price_leak_detection || "").trim();
-  const qa: Array<[string, string]> = [
-    [
-      `How much does leak detection cost in ${town}, TX?`,
-      `Detection typically ${price || "runs $150–$500"} in the ${row.parent_metro} area. ` +
-        `The exact price depends on access and line length — any site quoting a town-exact ` +
-        `price before seeing the job is guessing.`,
-    ],
-    [
-      `How do you find a hidden water leak in ${town}?`,
-      `With non-invasive electronic detection: acoustic listening, thermal imaging, ` +
-        `pressure testing and tracer gas. No guesswork cutting into your slab.`,
-    ],
-    [
-      `Does homeowners insurance cover leak detection in ${town}?`,
-      `Often, for sudden events — not gradual wear. A written detection report with ` +
-        `photos supports your claim, but coverage varies: ask your adjuster.`,
-    ],
-    [
-      `How fast can someone detect a leak in ${town}?`,
-      `Same-day detection is usually available. Smell gas? Leave the building, ` +
-        `call 911, then your gas utility — before calling anyone else.`,
-    ],
-  ];
-  return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: qa.map(([q, a]) => ({
-      "@type": "Question",
-      name: q,
-      acceptedAnswer: { "@type": "Answer", text: a },
-    })),
-  };
+export async function getTown(metroSlug: string, townSlug: string): Promise<TownRow | null> {
+  "use cache";
+  cacheLife({ revalidate: 3600 }); // town rows refresh hourly (ISR-style)
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data } = await sb
+    .from("towns")
+    .select("*")
+    .eq("metro_slug", metroSlug)
+    .eq("town_slug", townSlug)
+    .limit(1)
+    .maybeSingle();
+  return (data as TownRow | null) ?? null;
 }
 
-export function howToSchema(row: TownRow) {
-  const town = row.town;
-  return {
-    "@context": "https://schema.org",
-    "@type": "HowTo",
-    name: `How leak detection works in ${town}, TX`,
-    step: [
-      { "@type": "HowToStep", name: "Call or book", text: `Tell us the symptom; we'll tell you if it's a today-problem or a this-week problem in ${town}.` },
-      { "@type": "HowToStep", name: "We confirm your setup by address", text: `Water utility and town vs MUD vs unincorporated status confirmed before we quote.` },
-      { "@type": "HowToStep", name: "Non-invasive detection", text: `Acoustic, pressure, camera or tracer-gas detection. You get a written findings report with photos.` },
-      { "@type": "HowToStep", name: "You decide the fix", text: `Detection-only. The report doubles as documentation for insurance claims.` },
-    ],
-  };
-}
-
-export function breadcrumbSchema(row: TownRow) {
-  const base = SITE_URL;
-  return {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: `${base}/` },
-      { "@type": "ListItem", position: 2, name: "Texas", item: `${base}/tx/` },
-      { "@type": "ListItem", position: 3, name: row.parent_metro, item: `${base}/tx/${row.metro_slug}/` },
-      { "@type": "ListItem", position: 4, name: `${row.town} Leak Detection`, item: `${base}/tx/${row.metro_slug}/${row.town_slug}/` },
-    ],
-  };
-}
-
-export function speakableSchema() {
-  return {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    speakable: { "@type": "SpeakableSpecification", cssSelector: ["article h1", "article h2", ".faq"] },
-  };
-}
-
-/** All five schema objects for a town page, in TEMPLATE.md §15 order. */
-export function townSchemas(row: TownRow) {
-  return [
-    localBusinessSchema(row),
-    faqPageSchema(row),
-    howToSchema(row),
-    breadcrumbSchema(row),
-    speakableSchema(),
-  ];
+export async function getSiblings(metroSlug: string, townSlug: string): Promise<TownRow[]> {
+  "use cache";
+  cacheLife({ revalidate: 3600 }); // sibling lists refresh hourly (ISR-style)
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data } = await sb
+    .from("towns")
+    .select("town, town_slug, metro_slug")
+    .eq("metro_slug", metroSlug)
+    .neq("town_slug", townSlug)
+    .limit(4);
+  return (data as TownRow[]) ?? [];
 }
