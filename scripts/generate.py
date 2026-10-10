@@ -89,10 +89,15 @@ TEMPLATE — write these 16 sections as one <article> of clean HTML:
 16. Do NOT write schema/JSON-LD (the site template adds it), do NOT write
     <title> or meta description (the site builds those from data fields).
 
-Total: 3,500–5,000 words. Respond with ONLY a JSON object:
-{"html": "<article>…full html…</article>",
- "omission_log": {"used": ["town", …], "blank": ["permit_note", …],
-                  "skipped_sections": ["Permits & utilities box", …]}}
+Total: 3,500–5,000 words. Respond in EXACTLY this format (no markdown fences):
+
+<ARTICLE>
+<article>…full html…</article>
+</ARTICLE>
+<OMISSION>
+{"used": ["town", …], "blank": ["permit_note", …],
+ "skipped_sections": ["Permits & utilities box", …]}
+</OMISSION>
 The omission log MUST account for all 18 fields."""
 
 
@@ -120,11 +125,24 @@ def call_llm(system: str, user: str, model: str) -> dict:
         "messages": [{"role": "system", "content": system},
                      {"role": "user", "content": user}],
         "temperature": 0.4,
+        "max_tokens": 16000,
     }, timeout=300)
     r.raise_for_status()
     content = r.json()["choices"][0]["message"]["content"]
-    content = re.sub(r"^```(?:json)?|```$", "", content.strip(),
+    content = re.sub(r"^```(?:json|html)?|```$", "", content.strip(),
                      flags=re.MULTILINE).strip()
+    # New delimiter format: <ARTICLE>…</ARTICLE><OMISSION>…</OMISSION>
+    m_art = re.search(r"<ARTICLE>(.*?)</ARTICLE>", content, re.DOTALL)
+    m_omi = re.search(r"<OMISSION>(.*?)</OMISSION>", content, re.DOTALL)
+    if m_art and m_omi:
+        html = m_art.group(1).strip()
+        try:
+            omission = json.loads(m_omi.group(1).strip())
+        except json.JSONDecodeError:
+            omission = {"used": [], "blank": [], "skipped_sections": [],
+                        "parse_note": "omission JSON malformed"}
+        return {"html": html, "omission_log": omission}
+    # Fallback: legacy JSON object format
     return json.loads(content)
 
 
