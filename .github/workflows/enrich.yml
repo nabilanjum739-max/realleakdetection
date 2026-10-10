@@ -6,7 +6,8 @@
 #   US Census ACS   -> median year built, % pre-1980 homes
 # Writes ONLY to enrichment columns; never touches verified research.
 # Run from the Actions tab (manual dispatch). Idempotent — safe to re-run.
-# Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY
+# Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY, CENSUS_API_KEY
+# (Census API key is free: https://api.census.gov/data/key_signup.html)
 # ============================================================
 name: enrich-town-data
 
@@ -29,6 +30,7 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 

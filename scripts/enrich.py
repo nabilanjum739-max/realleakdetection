@@ -166,16 +166,29 @@ B25034_PRE1980 = ["B25034_008E", "B25034_009E", "B25034_010E",
                   "B25034_011E", "B25034_012E"]  # 1970s, 60s, 50s, 40s, pre-1940
 
 def census_housing(state_fips: str, place_fips: str) -> dict | None:
-    """ACS 5-year: median year built (B25035) + pre-1980 share (B25034)."""
+    """ACS 5-year: median year built (B25035) + pre-1980 share (B25034).
+
+    The Census API now requires a free key (api.census.gov/data/key_signup.html).
+    Without CENSUS_API_KEY the API 302-redirects to missing_key.html.
+    """
+    import os
     fields = ["NAME", "B25035_001E", "B25034_001E"] + B25034_PRE1980
-    r = requests.get("https://api.census.gov/data/2023/acs/acs5", params={
+    params = {
         "get": ",".join(fields),
         "for": f"place:{place_fips}",
         "in": f"state:{state_fips}",
-    }, headers=UA, timeout=30)
+    }
+    key = os.environ.get("CENSUS_API_KEY")
+    if key:
+        params["key"] = key
+    r = requests.get("https://api.census.gov/data/2023/acs/acs5", params=params,
+                     headers=UA, timeout=30)
     if r.status_code != 200:
         return None
-    rows = r.json()
+    try:
+        rows = r.json()
+    except ValueError:
+        return None
     if len(rows) < 2:
         return None
     row = dict(zip(rows[0], rows[1]))
@@ -200,13 +213,17 @@ def enrich_town(sb, metro_slug: str, town_slug: str) -> None:
     if geo:
         patch["lat"], patch["lon"] = geo["lat"], geo["lon"]
         print(f"   geocoded: {geo['lat']:.4f}, {geo['lon']:.4f}")
-        try:
-            patch.update(climate(geo["lat"], geo["lon"]))
-            print(f"   climate: {patch['rainfall_annual_in']}in rain, "
-                  f"{patch['freeze_days_per_year']} freeze days, "
-                  f"{patch['days_over_100f']} days>100F")
-        except Exception as e:  # noqa: BLE001 - enrichment is best-effort
-            print(f"   climate API failed (skipped): {e}")
+        for attempt in range(3):  # Open-Meteo archive can time out; retry
+            try:
+                patch.update(climate(geo["lat"], geo["lon"]))
+                print(f"   climate: {patch['rainfall_annual_in']}in rain, "
+                      f"{patch['freeze_days_per_year']} freeze days, "
+                      f"{patch['days_over_100f']} days>100F")
+                break
+            except Exception as e:  # noqa: BLE001 - enrichment is best-effort
+                print(f"   climate API attempt {attempt + 1} failed: {e}")
+                if attempt == 2:
+                    print("   climate skipped after 3 attempts")
         if geo.get("place_fips"):
             try:
                 housing = census_housing("48", geo["place_fips"])
