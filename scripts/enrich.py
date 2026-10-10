@@ -162,8 +162,8 @@ def climate(lat: float, lon: float) -> dict:
             "freeze_days_per_year": freeze, "days_over_100f": hot}
 
 # ---------------------------------------------------------------- 3. census
-B25034_PRE1980 = ["B25034_008E", "B25034_009E", "B25034_010E",
-                  "B25034_011E", "B25034_012E"]  # 1970s, 60s, 50s, 40s, pre-1940
+B25034_PRE1980 = ["B25034_007E", "B25034_008E", "B25034_009E",
+                  "B25034_010E", "B25034_011E"]  # 1970s, 60s, 50s, 40s, 1939 or earlier
 
 def census_housing(state_fips: str, place_fips: str) -> dict | None:
     """ACS 5-year: median year built (B25035) + pre-1980 share (B25034).
