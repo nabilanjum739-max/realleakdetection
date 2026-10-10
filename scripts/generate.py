@@ -89,7 +89,7 @@ TEMPLATE — write these 16 sections as one <article> of clean HTML:
 16. Do NOT write schema/JSON-LD (the site template adds it), do NOT write
     <title> or meta description (the site builds those from data fields).
 
-Total: 3,500–5,000 words. Respond in EXACTLY this format (no markdown fences):
+Total: 3,500–5,000 words — this is a HARD MINIMUM of 3,500 words, write expansively with rich local detail. Respond in EXACTLY this format (no markdown fences):
 
 <ARTICLE>
 <article>…full html…</article>
@@ -125,7 +125,7 @@ def call_llm(system: str, user: str, model: str) -> dict:
         "messages": [{"role": "system", "content": system},
                      {"role": "user", "content": user}],
         "temperature": 0.4,
-        "max_tokens": 16000,
+        "max_tokens": 32000,
     }, timeout=300)
     r.raise_for_status()
     content = r.json()["choices"][0]["message"]["content"]
