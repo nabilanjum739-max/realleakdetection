@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate one town page with the xAI Grok API (OpenAI-compatible).
+"""Generate one town page with the Groq API (OpenAI-compatible, free tier).
 
 Builds the prompt EXACTLY from TEMPLATE.md's "Grok system prompt" section:
-the town's Supabase row is the ONLY source of local facts. Grok must
+the town's Supabase row is the ONLY source of local facts. The model must
 return JSON: {"html": "<article>…</article>", "omission_log": {...}}.
 Stores page_html + omission_log, sets page_status='draft'.
 
@@ -10,9 +10,9 @@ Validation happens separately (validate.py) — nothing publishes
 without passing the gate.
 
 Usage:
-    python scripts/generate.py --metro houston --town katy [--model grok-3]
+    python scripts/generate.py --metro houston --town katy [--model llama-3.3-70b-versatile]
 
-Env: XAI_API_KEY (required), GROK_MODEL (optional, overrides --model).
+Env: GROQ_API_KEY (required), GROQ_MODEL (optional, overrides --model).
 """
 import argparse
 import json
@@ -24,7 +24,8 @@ import requests
 
 from common import RESEARCH_COLUMNS, get_supabase, get_town_row
 
-API_URL = "https://api.x.ai/v1/chat/completions"
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
+DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
 SYSTEM_PROMPT = """You are a local-service copywriter. You receive ONE JSON object: a town's
 18-field data row plus this template. Rules:
@@ -108,10 +109,10 @@ def build_user_message(row: dict) -> str:
             "trace to these fields:\n" + json.dumps(data, indent=2))
 
 
-def call_grok(system: str, user: str, model: str) -> dict:
-    key = os.environ.get("XAI_API_KEY")
+def call_llm(system: str, user: str, model: str) -> dict:
+    key = os.environ.get("GROQ_API_KEY")
     if not key:
-        raise RuntimeError("XAI_API_KEY is not set")
+        raise RuntimeError("GROQ_API_KEY is not set")
     r = requests.post(API_URL, headers={
         "Authorization": f"Bearer {key}", "Content-Type": "application/json",
     }, json={
@@ -132,8 +133,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--metro", required=True)
     ap.add_argument("--town", required=True)
-    ap.add_argument("--model", default=os.environ.get("GROK_MODEL") or "grok-3",
-                    help="xAI model id (env GROK_MODEL overrides default)")
+    ap.add_argument("--model", default=os.environ.get("GROQ_MODEL") or DEFAULT_MODEL,
+                    help="Groq model id (env GROQ_MODEL overrides default)")
     args = ap.parse_args()
 
     sb = get_supabase()
@@ -141,7 +142,7 @@ def main() -> None:
     print(f"generating {row['town']} ({args.metro}) with {args.model} …")
 
     try:
-        out = call_grok(SYSTEM_PROMPT, build_user_message(row), args.model)
+        out = call_llm(SYSTEM_PROMPT, build_user_message(row), args.model)
         html, omission = out["html"], out["omission_log"]
     except Exception as e:  # noqa: BLE001
         print(f"GROK CALL FAILED: {e}", file=sys.stderr)

@@ -1,9 +1,10 @@
 # ============================================================
-# Leak Detection SEO — page generation pipeline
+# Leak Detection SEO — page generation pipeline (Groq, free tier)
 # Manual dispatch per town: enrich -> generate -> validate (gate)
 # -> render visuals -> mark published.
 # A failing validation gate stops the job; the page never publishes.
 # Writes go straight to Supabase via the service key (no git commits).
+# Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY, GROQ_API_KEY
 # ============================================================
 name: generate-town-page
 
@@ -26,8 +27,8 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-      XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-      GROK_MODEL: ${{ secrets.GROK_MODEL }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GROQ_MODEL: ${{ secrets.GROQ_MODEL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +45,7 @@ jobs:
           --metro "${{ inputs.metro }}"
           --town "${{ inputs.town }}"
 
-      - name: Generate page with Grok (grounded, TEMPLATE.md prompt)
+      - name: Generate page with Groq (grounded, TEMPLATE.md prompt)
         run: >
           python scripts/generate.py
           --metro "${{ inputs.metro }}"
