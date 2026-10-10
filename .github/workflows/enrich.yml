@@ -1,0 +1,51 @@
+# ============================================================
+# Leak Detection SEO — API enrichment only (no Grok key needed)
+# Fills the "true figures" columns from free public APIs:
+#   Census Geocoder -> lat/lon
+#   Open-Meteo      -> rainfall, freeze days, 100F+ days
+#   US Census ACS   -> median year built, % pre-1980 homes
+# Writes ONLY to enrichment columns; never touches verified research.
+# Run from the Actions tab (manual dispatch). Idempotent — safe to re-run.
+# Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY
+# ============================================================
+name: enrich-town-data
+
+on:
+  workflow_dispatch:
+    inputs:
+      metro:
+        description: "Metro to enrich"
+        required: true
+        type: choice
+        options: [all, houston, dallas, san-antonio, austin, fort-worth]
+      town:
+        description: "Town slug (optional — leave empty for whole metro)"
+        required: false
+        type: string
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pipeline deps
+        run: pip install -r scripts/requirements.txt
+
+      - name: Enrich with true figures (free APIs)
+        run: |
+          ARGS=""
+          if [ "${{ inputs.metro }}" != "all" ]; then
+            ARGS="$ARGS --metro ${{ inputs.metro }}"
+          fi
+          if [ -n "${{ inputs.town }}" ]; then
+            ARGS="$ARGS --town ${{ inputs.town }}"
+          fi
+          python scripts/enrich.py $ARGS

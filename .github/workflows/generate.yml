@@ -1,0 +1,81 @@
+# ============================================================
+# Leak Detection SEO — page generation pipeline
+# Manual dispatch per town: enrich -> generate -> validate (gate)
+# -> render visuals -> mark published.
+# A failing validation gate stops the job; the page never publishes.
+# Writes go straight to Supabase via the service key (no git commits).
+# ============================================================
+name: generate-town-page
+
+on:
+  workflow_dispatch:
+    inputs:
+      metro:
+        description: "Metro slug (houston, dallas, san-antonio, austin, fort-worth)"
+        required: true
+        type: choice
+        options: [houston, dallas, san-antonio, austin, fort-worth]
+      town:
+        description: "Town slug, e.g. katy (lowercase, hyphens)"
+        required: true
+        type: string
+
+jobs:
+  build-page:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+      GROK_MODEL: ${{ secrets.GROK_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pipeline deps
+        run: pip install -r scripts/requirements.txt
+
+      - name: STEP 0 — enrich with true figures (free APIs)
+        run: >
+          python scripts/enrich.py
+          --metro "${{ inputs.metro }}"
+          --town "${{ inputs.town }}"
+
+      - name: Generate page with Grok (grounded, TEMPLATE.md prompt)
+        run: >
+          python scripts/generate.py
+          --metro "${{ inputs.metro }}"
+          --town "${{ inputs.town }}"
+
+      - name: Validation gate (11 checks — fail stops the job)
+        run: >
+          python scripts/validate.py
+          --metro "${{ inputs.metro }}"
+          --town "${{ inputs.town }}"
+
+      - name: Mark validated
+        run: >
+          python -c "
+          import os, sys
+          sys.path.insert(0, 'scripts')
+          from common import get_supabase, get_town_row
+          sb = get_supabase()
+          row = get_town_row(sb, '${{ inputs.metro }}', '${{ inputs.town }}')
+          sb.table('towns').update({'page_status': 'validated'}).eq('id', row['id']).execute()
+          print('validated ${{ inputs.metro }}/${{ inputs.town }}')
+          "
+
+      - name: Render visuals (SVG infographics from data)
+        run: >
+          python scripts/render-visuals.py
+          --metro "${{ inputs.metro }}"
+          --town "${{ inputs.town }}"
+
+      - name: Mark published
+        run: >
+          python scripts/mark-published.py
+          --metro "${{ inputs.metro }}"
+          --town "${{ inputs.town }}"
