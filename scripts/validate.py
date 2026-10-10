@@ -16,7 +16,7 @@ from pathlib import Path
 
 from common import PROJECT_ROOT, RESEARCH_COLUMNS, get_supabase, get_town_row
 
-SITE_DIR = PROJECT_ROOT / "site"
+SITE_DIR = PROJECT_ROOT  # site lives at repo root (not under site/)
 
 # ---- mirrors site/lib/site.ts buildTitle/buildMetaDescription (TEMPLATE.md §1)
 def build_title(town: str) -> str:
