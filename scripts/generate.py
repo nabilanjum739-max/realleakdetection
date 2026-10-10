@@ -34,7 +34,7 @@ SYSTEM_PROMPT = """You are a local-service copywriter. You receive ONE JSON obje
    section — never invent, never use generic filler.
 2. Prices: copy the metro range verbatim, prefix with "typically", attribute
    to "{Metro} area". Never state a town-exact price.
-3. Gas section: safety box first, 911 + utility before us. No exceptions.
+3. Gas section: safety box FIRST with the literal text "call 911" and "gas utility" — the digits 911 MUST appear in the gas section. No exceptions.
 4. No reviews, testimonials, or case studies. "Typical job" examples must be
    labeled "Example:" explicitly.
 5. Tone: plain, direct, local. Short sentences. No AI-tell phrases (list

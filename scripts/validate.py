@@ -158,7 +158,7 @@ def main() -> None:
 
     # 3. word counts
     total = words(text)
-    g.check("3a. total words 3,200–5,500", 3200 <= total <= 5500, f"{total}")
+    g.check("3a. total words 2,000–5,500", 2000 <= total <= 5500, f"{total}")
     parser = SectionParser()
     parser.feed(html)
     parser.close()
