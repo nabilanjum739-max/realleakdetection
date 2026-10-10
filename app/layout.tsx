@@ -6,9 +6,9 @@ import CallBar from "@/components/CallBar";
 import { BRAND, NO_INDEX } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: `${BRAND} — Leak Detection Guides Across Texas`,
+  title: `${BRAND} — Leak Detection Guides Across the USA`,
   description:
-    "Hyper-local leak detection guides for 50 Texas towns: slab, sewer, gas, pool and more. Verified local data, published pricing, no guesswork.",
+    "Hyper-local leak detection guides for American towns: slab, sewer, gas, pool and more. Verified local data, published pricing, no guesswork. Now live in Texas.",
   // Staging-first: noindex on the vercel.app subdomain so Google never
   // indexes staging URLs. Flip NEXT_PUBLIC_NO_INDEX=false for launch.
   robots: NO_INDEX ? { index: false, follow: false } : { index: true, follow: true },

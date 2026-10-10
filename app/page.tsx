@@ -52,15 +52,15 @@ export default function Home() {
         />
         <div className="relative mx-auto max-w-6xl px-4 py-20 text-center md:py-28">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400">
-            Texas · Hyper-Local Leak Detection Guides
+            Hyper-Local Leak Detection Guides · USA
           </p>
           <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-extrabold tracking-tight text-white md:text-6xl">
             Find the Leak. <span className="text-amber-400">Fix It Right.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-blue-100">
-            Every Texas town gets its own researched guide — real soil, housing
+            Every town gets its own researched guide — real soil, housing
             and climate data, published pricing, and all 10 leak detection
-            services. No guesswork, no generic advice.
+            services. Now live across Texas, expanding nationwide.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <a
@@ -95,7 +95,7 @@ export default function Home() {
         </p>
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           {[
-            { n: "1", t: "Pick your town", d: "Open your town's guide — written for its soil, housing stock and water systems, not generic Texas advice." },
+            { n: "1", t: "Pick your town", d: "Open your town's guide — written for its soil, housing stock and water systems, not generic nationwide advice." },
             { n: "2", t: "Know your leak", d: "Match your symptoms to the guide: slab, sewer, gas, pool or yard line. See typical local prices before you call anyone." },
             { n: "3", t: "Call for detection", d: "One call connects you with detection specialists using acoustic, thermal and camera equipment — pinpoint, not guesswork." },
           ].map((s) => (
@@ -150,7 +150,7 @@ export default function Home() {
       <section id="areas" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
         <h2 className="text-center text-3xl font-extrabold tracking-tight text-blue-950">Service areas</h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
-          Five Texas metros, fifty towns — pick yours for the full local guide.
+          Live now: 5 Texas metros, 50 towns — more states coming as each guide meets our research bar.
         </p>
         <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {METROS.map((m) => (
@@ -180,10 +180,10 @@ export default function Home() {
             </div>
           ))}
           <div className="flex flex-col justify-center rounded-2xl bg-blue-900 p-6 text-white">
-            <h3 className="text-xl font-extrabold">Not in Texas?</h3>
+            <h3 className="text-xl font-extrabold">Beyond Texas?</h3>
             <p className="mt-2 text-sm leading-6 text-blue-100">
-              We're expanding metro by metro. Texas first — more states as each
-              guide meets our research bar.
+              We're launching metro by metro across the USA. Texas is live
+              now — your state is next as each guide meets our research bar.
             </p>
             <a
               href={`tel:${PHONE_TEL}`}

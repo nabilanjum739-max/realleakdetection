@@ -29,7 +29,7 @@ export default function Header() {
           <span className="leading-tight">
             <span className="block text-lg font-extrabold tracking-tight text-blue-950">{BRAND}</span>
             <span className="block text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-              Texas Leak Detection
+              Nationwide Leak Detection
             </span>
           </span>
         </Link>

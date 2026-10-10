@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ service: 
   const s = SERVICES.find((x) => x.slug === service);
   const name = s?.name ?? service;
   const title = `${name} — USA Guide | Real Leak Detection`;
-  const description = `${name}: how it works, what it costs, and when you need it. Plus hyper-local Texas town guides with real data.`;
+  const description = `${name}: how it works, what it costs, and when you need it. Plus hyper-local U.S. town guides with real data.`;
   return {
     title: title.slice(0, 60),
     description: description.slice(0, 155),

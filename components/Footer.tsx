@@ -23,10 +23,10 @@ export default function Footer() {
           <div className="max-w-sm">
             <p className="text-xl font-extrabold text-white">{BRAND}</p>
             <p className="mt-3 text-sm leading-6 text-blue-200">
-              Hyper-local leak detection guides for Texas towns — slab, sewer,
-              gas, pool and more. Every guide is written from verified local
-              data: real soil, housing, climate and pricing figures. Never
-              invented.
+              Hyper-local leak detection guides for towns across America —
+              slab, sewer, gas, pool and more. Every guide is written from
+              verified local data: real soil, housing, climate and pricing
+              figures. Never invented.
             </p>
             <a
               href={`tel:${PHONE_TEL}`}
