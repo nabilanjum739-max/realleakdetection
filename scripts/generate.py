@@ -132,7 +132,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--metro", required=True)
     ap.add_argument("--town", required=True)
-    ap.add_argument("--model", default=os.environ.get("GROK_MODEL", "grok-3"),
+    ap.add_argument("--model", default=os.environ.get("GROK_MODEL") or "grok-3",
                     help="xAI model id (env GROK_MODEL overrides default)")
     args = ap.parse_args()
 
