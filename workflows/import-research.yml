@@ -1,0 +1,54 @@
+# ============================================================
+# Leak Detection SEO — import researched town data to Supabase
+# Loads the 5 research batch CSVs (research-csvs/*-towns.csv) into
+# the `towns` table's research columns (ZIPs, soil, foundations,
+# housing era, pipe materials, neighborhoods, pricing, permits,
+# water utilities, climate notes, seasonal angles, competitor gaps).
+#
+# Upsert on (metro_slug, town_slug). Idempotent — safe to re-run:
+# empty CSV cells never overwrite existing non-empty values.
+# Run BEFORE generate-town-page: the generator reads these columns
+# from Supabase to ground each page (no research data = thin page).
+#
+# Run from the Actions tab (manual dispatch). No inputs.
+# Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY
+# ============================================================
+name: import-research-data
+
+on:
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pipeline deps
+        run: pip install -r scripts/requirements.txt
+
+      - name: Import 50-town research CSVs to Supabase
+        run: |
+          cp research-csvs/*-towns.csv .
+          python scripts/import-csv.py
+
+      - name: Sanity check (Katy row has research data)
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, 'scripts')
+          from common import get_supabase, get_town_row
+          sb = get_supabase()
+          row = get_town_row(sb, 'houston', 'katy')
+          filled = [c for c in ('zip_codes','soil_type','water_utility','price_slab_detection','competitor_gap') if (row.get(c) or '').strip()]
+          print('katy research fields filled:', len(filled), '/ 5 ->', filled)
+          assert len(filled) == 5, 'research import incomplete for katy'
+          print('IMPORT OK')
+          "
