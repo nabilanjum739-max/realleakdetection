@@ -3,6 +3,7 @@ import { BRAND, PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
 import { TOWNS } from "@/lib/towns";
 import { SERVICES, SUB_NICHES } from "@/lib/services";
 import CtaBand from "@/components/CtaBand";
+import UsaStats from "@/components/UsaStats";
 
 const METROS = [
   { slug: "houston", label: "Houston" },
@@ -86,6 +87,9 @@ export default function Home() {
           </ul>
         </div>
       </section>
+
+      {/* USA DATA */}
+      <UsaStats />
 
       {/* HOW IT WORKS */}
       <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">

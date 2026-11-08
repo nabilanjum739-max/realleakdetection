@@ -11,6 +11,7 @@ import CtaBand from "@/components/CtaBand";
 import TownDataSnapshot from "@/components/TownDataSnapshot";
 import TownVisuals from "@/components/TownVisuals";
 import LeakChecker from "@/components/LeakChecker";
+import MeterTest from "@/components/MeterTest";
 
 import { cacheLife } from "next/cache";
 
@@ -152,6 +153,9 @@ export default async function TownPage({ params }: { params: Promise<Params> }) 
 
       {/* INTERACTIVE LEAK CHECK — lead-gen screening tool */}
       <LeakChecker town={name} />
+
+      {/* OVERNIGHT METER TEST — calculator + live cost clock */}
+      <MeterTest town={name} />
 
       {/* HYPER-LOCAL RESEARCH — visible even before the Grok article exists */}
       {row && <TownDataSnapshot row={row} />}
