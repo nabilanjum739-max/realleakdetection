@@ -58,7 +58,7 @@ jobs:
           --town "${{ inputs.town }}"
 
       - name: Mark validated
-        run: >
+        run: |
           python -c "
           import os, sys
           sys.path.insert(0, 'scripts')

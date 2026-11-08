@@ -1,0 +1,26 @@
+# ============================================================
+# Supabase keep-alive — free-tier projects auto-pause after
+# ~1 week of inactivity. This pings the towns table with a
+# real (tiny) query twice a week so the project stays awake.
+# Uses existing repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY
+# ============================================================
+name: supabase-keep-alive
+
+on:
+  schedule:
+    - cron: "17 6 * * 1,4" # Mon + Thu 06:17 UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase (1-row select)
+        run: |
+          code=$(curl -s -o /tmp/out.json -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/towns?select=town&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}")
+          echo "HTTP $code"
+          head -c 300 /tmp/out.json; echo
+          test "$code" = "200"
