@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { SERVICES } from "@/lib/services";
 import { TOWNS } from "@/lib/towns";
 import { PHONE_DISPLAY, PHONE_TEL, SITE_URL } from "@/lib/site";
+import { breadcrumbListSchema } from "@/lib/schema";
 import CtaBand from "@/components/CtaBand";
 
 /** Prerender all 10 service pillars at build time. */
@@ -43,6 +44,18 @@ export default async function ServicePillar({ params }: { params: Promise<{ serv
   );
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbListSchema([
+              { name: "Home", path: "/" },
+              { name: "Services", path: "/#services" },
+              { name: s.name, path: `/services/${s.slug}/` },
+            ])
+          ).replace(/</g, "\\u003c"),
+        }}
+      />
       <section className="relative overflow-hidden bg-blue-950">
         <div
           className="pointer-events-none absolute inset-0 opacity-25"
@@ -126,7 +139,7 @@ export default async function ServicePillar({ params }: { params: Promise<{ serv
 
       <CtaBand
         title="Need this service? One call is enough."
-        subtitle="Describe your symptoms — a detection specialist will tell you honestly whether you need this service or something else."
+        subtitle="Describe your symptoms — a local pro can tell you honestly whether you need this service or something else."
       />
     </>
   );

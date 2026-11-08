@@ -101,7 +101,7 @@ export default function Home() {
           {[
             { n: "1", t: "Pick your town", d: "Open your town's guide — written for its soil, housing stock and water systems, not generic nationwide advice." },
             { n: "2", t: "Know your leak", d: "Match your symptoms to the guide: slab, sewer, gas, pool or yard line. See typical local prices before you call anyone." },
-            { n: "3", t: "Call for detection", d: "One call connects you with detection specialists using acoustic, thermal and camera equipment — pinpoint, not guesswork." },
+            { n: "3", t: "Call for detection", d: "One call connects you with local detection pros using acoustic, thermal and camera equipment — pinpoint, not guesswork." },
           ].map((s) => (
             <div key={s.n} className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-800 text-lg font-extrabold text-amber-400">
@@ -121,7 +121,7 @@ export default function Home() {
             10 leak detection services, 4 specialties
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
-            Detection only — we find it precisely, you choose who fixes it.
+            Detection only — pinpoint it precisely first, then you choose who fixes it.
           </p>
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             {SUB_NICHES.map((niche) => (

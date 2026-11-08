@@ -16,7 +16,7 @@ interface CtaBandProps {
 /** Reusable conversion band — blue panel, amber call CTA. */
 export default function CtaBand({
   title = "Suspect a leak? Don't wait for the damage.",
-  subtitle = "Water damage gets more expensive every day. Call now for fast, non-invasive leak detection — most leaks pinpointed in a single visit.",
+  subtitle = "Water damage gets more expensive every day. Non-invasive detection pinpoints the leak without exploratory digging — published pricing, so you can compare local pros before you call.",
 }: CtaBandProps) {
   return (
     <section className="mx-auto max-w-6xl px-4 py-14" aria-label="Call to action">
@@ -41,7 +41,7 @@ export default function CtaBand({
             <PhoneIcon />
             Call {PHONE_DISPLAY}
           </a>
-          <p className="mt-4 text-sm text-blue-200">Tap to call — speak to a leak detection specialist</p>
+          <p className="mt-4 text-sm text-blue-200">Tap to call — talk to a local leak detection pro</p>
         </div>
       </div>
     </section>

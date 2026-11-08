@@ -254,7 +254,7 @@ function Result({
       headline: "Your answers point to an active leak.",
       body: `The pattern matches ${likelyType}. Water damage gets more expensive every day — a small leak left for months can turn into foundation or mold remediation. Don't wait on this one.`,
       cta: `Call ${PHONE_DISPLAY}`,
-      ctaSub: "Most leaks are pinpointed in a single non-invasive visit.",
+      ctaSub: "Detection is non-invasive — no tearing into floors or walls to look.",
     },
     medium: {
       badge: "Worth checking",
@@ -264,7 +264,7 @@ function Result({
       headline: "Some real warning signs here.",
       body: `Could be ${likelyType}. Before you call anyone, do the 2-hour meter test — it takes one look at your water meter to confirm.`,
       cta: "Call for advice",
-      ctaSub: "Describe your symptoms — we'll tell you honestly if you need detection.",
+      ctaSub: "Describe your symptoms — a local pro can tell you honestly if you need detection.",
     },
     low: {
       badge: "Low risk",
@@ -274,7 +274,7 @@ function Result({
       headline: "No strong leak signals right now.",
       body: "Nothing here screams leak. Keep an eye on your water bill — a sudden jump is the earliest warning most homeowners get.",
       cta: "Questions? Call us",
-      ctaSub: "Free advice — no pressure, no upsell.",
+      ctaSub: "Straight answers — no pressure, no upsell.",
     },
   }[band];
 

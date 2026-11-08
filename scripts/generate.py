@@ -48,17 +48,24 @@ world", "look no further", "top-notch", "unparalleled", "when it comes to",
 "nestled", "in conclusion", "moreover/furthermore stacking".
 
 TEMPLATE — write these 16 sections as one <article> of clean HTML:
-1. Hero: <h1>Leak Detection in {Town}, TX</h1> + 2-paragraph intro (soil hook
-   + housing era), 150–200 words. Name all 10 services once.
-2. Trust bar: 4 bullets (published pricing · utility confirmed by address ·
-   detection-only specialists · free quotes).
+1. Intro: 2 paragraphs (soil hook + housing era), 150–200 words. Do NOT
+   write an <h1> — the page template renders the H1 itself; start with the
+   paragraphs. Name all 10 services once. The page displays data cards with
+   the exact soil type, prices and stats above the article — do NOT restate
+   those figures as a list; interpret what they mean for the reader.
+2. Trust bar: 3 bullets (published pricing · utility confirmed by address ·
+   detection-only — we pinpoint it; you choose who fixes it). Never claim
+   anything is free.
 3. "Why {Town} pipes fail" <h2>: three short paragraphs — SOIL (soil_type +
    soil_leak_note), WATER (water_utility), HOUSING (housing_era +
    common_pipe_materials + foundation_types). 250–350 words.
 4. Symptom checker <h2>: HTML table Symptom | What it usually means |
    Urgency | What to do. Gas row FIRST, always red urgency with 911-first
    language ("Leave the building, call 911, then your gas utility").
-5. Ten service <h2> sections, 200–400 words EACH, in this order: Slab leak
+5. Ten service <h2> sections, 200–400 words EACH — 200 is a HARD MINIMUM:
+   a section under 200 words fails validation and the whole page is
+   rejected, so write every section in full (never compress the later
+   ones), in this order: Slab leak
    detection, Underground / yard line leak detection, Water main leak
    detection, Sewer line leak detection, Sewer camera inspection & diagnosis,
    Septic tank leak detection, Gas line leak detection (safety box FIRST),
@@ -84,12 +91,21 @@ TEMPLATE — write these 16 sections as one <article> of clean HTML:
     Never invent names.
 13. Property managers & home buyers <h2>: two short audience blocks.
 14. FAQ <h2>: 12–15 questions, each answer 50–70 words, direct answer in
-    sentence one. Wrap as <div class="faq"><h3>Q…</h3><p>A…</p>…</div>.
+    sentence one. The set MUST include at least one question about cost or
+    price and at least one about homeowners insurance coverage. Wrap as
+    <div class="faq"><h3>Q…</h3><p>A…</p>…</div>.
 15. Final CTA: call button + "serving {neighborhoods short list}".
 16. Do NOT write schema/JSON-LD (the site template adds it), do NOT write
     <title> or meta description (the site builds those from data fields).
+17. Internal links: the user message ends with a LINK TARGETS list — those
+    are the ONLY URLs you may link to; never invent a URL. Inside the
+    article body, link contextually to at least 4 service pillar pages
+    (from within the matching service sections) and at least 3 sibling
+    town guides (where a neighboring town is naturally relevant, e.g.
+    shared soil or water systems). A page with fewer links fails
+    validation.
 
-Total: 3,500–5,000 words — this is a HARD MINIMUM of 3,500 words, write expansively with rich local detail. Respond in EXACTLY this format (no markdown fences):
+Total: 3,500–6,000 words — this is a HARD MINIMUM of 3,500 words, write expansively with rich local detail. Respond in EXACTLY this format (no markdown fences):
 
 <ARTICLE>
 <article>…full html…</article>
@@ -101,7 +117,22 @@ Total: 3,500–5,000 words — this is a HARD MINIMUM of 3,500 words, write expa
 The omission log MUST account for all 18 fields."""
 
 
-def build_user_message(row: dict) -> str:
+# Mirrors site/lib/services.ts — the only pillar URLs the model may link to.
+SERVICE_PILLARS = [
+    ("Slab leak detection", "/services/slab-leak-detection/"),
+    ("Underground / yard line leak detection", "/services/underground-yard-line-leak-detection/"),
+    ("Water main leak detection", "/services/water-main-leak-detection/"),
+    ("Sewer line leak detection", "/services/sewer-line-leak-detection/"),
+    ("Sewer camera inspection & diagnosis", "/services/sewer-camera-inspection/"),
+    ("Septic tank leak detection", "/services/septic-tank-leak-detection/"),
+    ("Natural gas line leak detection", "/services/gas-line-leak-detection/"),
+    ("Pool leak detection", "/services/pool-leak-detection/"),
+    ("Tankless water heater leak detection", "/services/tankless-water-heater-leak-detection/"),
+    ("Irrigation / sprinkler leak detection", "/services/irrigation-sprinkler-leak-detection/"),
+]
+
+
+def build_user_message(row: dict, sb=None) -> str:
     data = {c: (row.get(c) or "") for c in RESEARCH_COLUMNS}
     data["parent_metro_full"] = row.get("parent_metro", "")
     # enrichment figures Grok may cite (all verified API values)
@@ -110,8 +141,28 @@ def build_user_message(row: dict) -> str:
               "days_over_100f", "soil_clay_pct"):
         if row.get(c) is not None:
             data[c] = row[c]
-    return ("Write the town page for this data row. Every local claim must "
-            "trace to these fields:\n" + json.dumps(data, indent=2))
+    msg = ("Write the town page for this data row. Every local claim must "
+           "trace to these fields:\n" + json.dumps(data, indent=2))
+    # LINK TARGETS (prompt §17): real sibling slugs from the DB + the fixed
+    # pillar list, so the model links only to URLs that exist.
+    siblings = []
+    if sb is not None:
+        try:
+            res = (sb.table("towns").select("town, town_slug")
+                   .eq("metro_slug", row["metro_slug"])
+                   .neq("town_slug", row["town_slug"]).execute())
+            siblings = res.data or []
+        except Exception:  # noqa: BLE001 — link targets are best-effort
+            siblings = []
+    lines = ["", "LINK TARGETS — the ONLY URLs you may link to:"]
+    lines.append(f"Metro hub: /tx/{row['metro_slug']}/")
+    lines.append("Service pillars:")
+    lines += [f"- {name}: {url}" for name, url in SERVICE_PILLARS]
+    if siblings:
+        lines.append("Sibling town guides:")
+        lines += [f"- {s['town']}: /tx/{row['metro_slug']}/{s['town_slug']}/"
+                  for s in siblings]
+    return msg + "\n" + "\n".join(lines)
 
 
 def call_llm(system: str, user: str, model: str) -> dict:
@@ -159,7 +210,7 @@ def main() -> None:
     print(f"generating {row['town']} ({args.metro}) with {args.model} …")
 
     try:
-        out = call_llm(SYSTEM_PROMPT, build_user_message(row), args.model)
+        out = call_llm(SYSTEM_PROMPT, build_user_message(row, sb), args.model)
         html, omission = out["html"], out["omission_log"]
     except Exception as e:  # noqa: BLE001
         print(f"GROK CALL FAILED: {e}", file=sys.stderr)

@@ -59,6 +59,17 @@ function short(s: string | null, n = 30): string | null {
   return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
 }
 
+/**
+ * The hero owns the page's single H1. Stored articles were generated
+ * with their own <h1> — demote any article H1 to H2 at render so the
+ * page always has exactly one H1 (new generations omit it entirely).
+ */
+function demoteArticleH1(html: string): string {
+  return html
+    .replace(/<h1(\s[^>]*)?>/gi, "<h2$1>")
+    .replace(/<\/h1\s*>/gi, "</h2>");
+}
+
 function PhoneIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
@@ -68,9 +79,10 @@ function PhoneIcon({ className = "h-5 w-5" }: { className?: string }) {
 }
 
 /**
- * Town page — the money page. Renders the Grok-generated article
+ * Town page — the money page. Renders the generated article
  * (all 16 TEMPLATE.md sections) from the Supabase row, plus the
- * 5-schema JSON-LD stack and data-driven visuals.
+ * JSON-LD stack (Organization, Service, FAQPage, HowTo, BreadcrumbList,
+ * Speakable) and data-driven visuals.
  */
 export default async function TownPage({ params }: { params: Promise<Params> }) {
   "use cache";
@@ -179,7 +191,7 @@ export default async function TownPage({ params }: { params: Promise<Params> }) 
             <>
               <div
                 className="article-body"
-                dangerouslySetInnerHTML={{ __html: row!.page_html as string }}
+                dangerouslySetInnerHTML={{ __html: demoteArticleH1(row!.page_html as string) }}
               />
               {visuals.map((v) => (
                 <figure key={v.file} className="my-10">
@@ -264,8 +276,8 @@ export default async function TownPage({ params }: { params: Promise<Params> }) 
       </section>
 
       <CtaBand
-        title={`Leak in ${name}? Get it pinpointed today.`}
-        subtitle={`Most ${name} leaks are found in a single visit — no destructive digging to "see what's wrong." Call now.`}
+        title={`Leak in ${name}? Get it pinpointed.`}
+        subtitle={`${name} leaks are pinpointed non-invasively — no destructive digging to "see what's wrong." Published pricing, so you can compare local pros before you call.`}
       />
     </>
   );

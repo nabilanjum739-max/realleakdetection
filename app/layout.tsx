@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CallBar from "@/components/CallBar";
 import { BRAND, NO_INDEX } from "@/lib/site";
+import { organizationSchema } from "@/lib/schema";
 
 export const metadata: Metadata = {
   title: `${BRAND} — Leak Detection Guides Across the USA`,
@@ -18,6 +19,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="bg-white font-sans text-slate-900 antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema()).replace(/</g, "\\u003c"),
+          }}
+        />
         <Header />
         <main>{children}</main>
         <Footer />

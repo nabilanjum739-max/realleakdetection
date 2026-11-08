@@ -23,7 +23,7 @@ export default function CallBar() {
       </span>
       <span className="text-left leading-tight">
         <span className="block text-base font-extrabold">Tap to Call Now</span>
-        <span className="block text-xs font-semibold opacity-80">{PHONE_DISPLAY} · Free assessment</span>
+        <span className="block text-xs font-semibold opacity-80">{PHONE_DISPLAY} · Published pricing</span>
       </span>
     </a>
   );

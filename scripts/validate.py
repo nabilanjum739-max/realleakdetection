@@ -34,10 +34,10 @@ def build_meta(row: dict) -> str:
     if m:
         low = f" from ${m.group(1)}"
     parts = [f"Leak detection in {town}, TX{low}.",
-             "Slab, sewer, gas & pool leak experts"]
+             "Slab, sewer, gas & pool leak guide"]
     if hoods:
         parts.append(f"serving {', '.join(hoods)} & more.")
-    parts.append("Call for same-day detection.")
+    parts.append("Compare local pros.")
     meta = " ".join(parts)
     return meta if len(meta) <= 155 else meta[:152] + "..."
 
@@ -156,9 +156,11 @@ def main() -> None:
     found = [p for p in PLACEHOLDERS if p in text]
     g.check("2. no placeholders", not found, f"found: {found}")
 
-    # 3. word counts
+    # 3. word counts (TEMPLATE.md budget: sections 200–400; total ceiling
+    # raised to 6,500 because 10 sections at up to 400 words + 15 FAQs at
+    # up to 80 words can legitimately total ~6,600)
     total = words(text)
-    g.check("3a. total words 2,000–5,500", 2000 <= total <= 5500, f"{total}")
+    g.check("3a. total words 2,000–6,500", 2000 <= total <= 6500, f"{total}")
     parser = SectionParser()
     parser.feed(html)
     parser.close()
@@ -170,9 +172,9 @@ def main() -> None:
             sec_failed.append(f"{key}: h2 missing")
             continue
         w = words(match[1])
-        if not 80 <= w <= 400:
+        if not 200 <= w <= 400:
             sec_failed.append(f"{key}: {w} words")
-    g.check("3b. 10 service sections 80–400 words each", not sec_failed,
+    g.check("3b. 10 service sections 200–400 words each", not sec_failed,
             "; ".join(sec_failed))
 
     # 4. title/meta (built from data fields, same logic as the site)
@@ -181,13 +183,24 @@ def main() -> None:
             len(title) <= 60 and f"{row['town']}, TX" in title, title)
     g.check("4b. meta ≤155 chars", len(meta) <= 155, f"{len(meta)} chars")
 
-    # 5. FAQ: 12–15 Q&As, answers 10–80 words
+    # 5. FAQ: 12–15 Q&As, answers 50–80 words (TEMPLATE.md §14: 50–70
+    # target, gate allows up to 80)
     n = len(parser.faq_qas)
     bad = [(q[:40], words(a)) for q, a in parser.faq_qas
-           if not 10 <= words(a) <= 80]
-    g.check("5. FAQ 12–15 Q&As, answers 10–80 words",
+           if not 50 <= words(a) <= 80]
+    g.check("5. FAQ 12–15 Q&As, answers 50–80 words",
             12 <= n <= 15 and not bad,
             f"{n} Q&As" + (f"; bad lengths: {bad}" if bad else ""))
+
+    # 5b. FAQ must cover the two top customer topics: cost and insurance
+    questions = " ".join(q.lower() for q, _ in parser.faq_qas)
+    has_cost = any(k in questions for k in
+                   ("cost", "price", "how much", "charge"))
+    has_insurance = any(k in questions for k in
+                        ("insurance", "claim", "covered"))
+    g.check("5b. FAQ includes cost + insurance questions",
+            has_cost and has_insurance,
+            f"cost question: {has_cost}, insurance question: {has_insurance}")
 
     # 6. gas safety box: 911-first language in the gas section
     gas = next((b for h, b in parser.sections if "gas line" in h.lower()), "")
@@ -213,29 +226,37 @@ def main() -> None:
     bad_ph = [p for p in BANNED_PHRASES if p in text]
     g.check("9. no AI-tell phrases", not bad_ph, f"found: {bad_ph}")
 
-    # 10. schema: all five types present in the site's schema builder
+    # 10. schema: all six types present in the site's schema builder
+    # (Service + Organization replaced LocalBusiness per the pre-launch plan)
     schema_file = SITE_DIR / "lib" / "schema.ts"
     schema_ok, schema_detail = False, "site/lib/schema.ts missing"
     if schema_file.exists():
         src = schema_file.read_text()
-        need = ["LocalBusiness", "FAQPage", "HowTo", "BreadcrumbList",
-                "Speakable"]
+        need = ["Service", "Organization", "FAQPage", "HowTo",
+                "BreadcrumbList", "Speakable"]
         missing_t = [t for t in need if t not in src]
         schema_ok = not missing_t
         schema_detail = f"missing: {missing_t}" if missing_t else \
-            "all five types in schema builder"
-    g.check("10. schema stack (5 types) in site builder", schema_ok,
+            "all six types in schema builder"
+    g.check("10. schema stack (6 types) in site builder", schema_ok,
             schema_detail)
 
-    # 11. internal links: breadcrumb + hub + ≥3 siblings + 4 pillars
-    sibs = (sb.table("towns").select("town_slug")
-              .eq("metro_slug", args.metro)
-              .neq("town_slug", args.town).execute().data)
-    niches = {r["sub_niche"] for r in
-              sb.table("services").select("sub_niche").execute().data}
-    links_ok = len(sibs) >= 3 and len(niches) == 4
-    g.check("11. internal links (≥3 siblings, 4 pillars)",
-            links_ok, f"{len(sibs)} siblings, {len(niches)} sub-niches")
+    # 11. internal links: parse the REAL links inside the article HTML
+    # (TEMPLATE.md §16) — ≥3 sibling town guides + ≥4 service pillars,
+    # linked contextually in the body, not just present in some table.
+    hrefs = re.findall(r'href="([^"]+)"', html)
+    sib_slugs, pillar_slugs = set(), set()
+    for h in hrefs:
+        m = re.search(r"/tx/([a-z0-9-]+)/([a-z0-9-]+)/?$", h)
+        if m and m.group(1) == args.metro and m.group(2) != args.town:
+            sib_slugs.add(m.group(2))
+        m = re.search(r"/services/([a-z0-9-]+)/?$", h)
+        if m:
+            pillar_slugs.add(m.group(1))
+    links_ok = len(sib_slugs) >= 3 and len(pillar_slugs) >= 4
+    g.check("11. internal links in article (≥3 siblings, ≥4 pillars)",
+            links_ok,
+            f"{len(sib_slugs)} sibling links, {len(pillar_slugs)} pillar links")
 
     print(f"\n{len(g.failures)} check(s) failed.")
     raise SystemExit(1 if g.failures else 0)

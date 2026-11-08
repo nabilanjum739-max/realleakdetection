@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { TOWNS } from "@/lib/towns";
 import { PHONE_DISPLAY, PHONE_TEL, SITE_URL } from "@/lib/site";
+import { breadcrumbListSchema } from "@/lib/schema";
 import CtaBand from "@/components/CtaBand";
 
 const METRO_LABEL: Record<string, string> = {
@@ -54,6 +55,17 @@ export default async function CityHub({ params }: { params: Promise<{ metro: str
   const towns = TOWNS.filter((t) => t.metroSlug === metro);
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbListSchema([
+              { name: "Home", path: "/" },
+              { name: label, path: `/tx/${metro}/` },
+            ])
+          ).replace(/</g, "\\u003c"),
+        }}
+      />
       <section className="relative overflow-hidden bg-blue-950">
         <div
           className="pointer-events-none absolute inset-0 opacity-25"
@@ -105,7 +117,7 @@ export default async function CityHub({ params }: { params: Promise<{ metro: str
 
       <CtaBand
         title={`${label} leak? Pinpoint it before it spreads.`}
-        subtitle="Water damage compounds daily. One call connects you with detection specialists — most leaks found in a single visit."
+        subtitle="Water damage compounds daily. One call connects you with local detection pros — published pricing, non-invasive pinpointing."
       />
     </>
   );

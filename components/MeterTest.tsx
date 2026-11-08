@@ -279,7 +279,7 @@ export default function MeterTest({ town }: { town: string }) {
               <p className="mt-3 text-sm text-slate-500">
                 {result.band === "none"
                   ? "No leak today — but save this page. The meter test is worth repeating twice a year."
-                  : "Non-invasive detection pinpoints it — usually in a single visit."}
+                  : "Non-invasive detection pinpoints it — without exploratory digging."}
               </p>
               <button onClick={reset} className="mt-6 text-sm font-bold text-blue-800 hover:underline">
                 Test again

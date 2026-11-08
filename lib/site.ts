@@ -43,10 +43,10 @@ export function buildMetaDescription(row: MetaRow): string {
   const low = lowMatch ? ` from $${lowMatch[1]}` : "";
   const parts = [
     `Leak detection in ${row.town}, TX${low}.`,
-    "Slab, sewer, gas & pool leak experts",
+    "Slab, sewer, gas & pool leak guide",
   ];
   if (hoods.length) parts.push(`serving ${hoods.join(", ")} & more.`);
-  parts.push("Call for same-day detection.");
+  parts.push("Compare local pros.");
   const meta = parts.join(" ");
   return meta.length <= 155 ? meta : meta.slice(0, 152) + "...";
 }
