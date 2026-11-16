@@ -4,7 +4,7 @@ import { TOWNS, METROS } from "@/lib/towns";
 import { SERVICES } from "@/lib/services";
 
 /**
- * Sitemap: home + 5 city hubs + 50 town pages + 10 service pillars + tools.
+ * Sitemap: home + 10 city hubs + 100 town pages + 10 service pillars + tools.
  * Submit to Google Search Console ONLY after the custom domain is live
  * (never for the vercel.app staging URLs — those stay noindex).
  */

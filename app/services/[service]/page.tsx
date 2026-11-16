@@ -131,7 +131,7 @@ export default async function ServicePillar({ params }: { params: Promise<{ serv
               ))}
             </ul>
             <Link href="/#areas" className="mt-5 inline-block text-sm font-bold text-blue-800 hover:underline">
-              Browse all 50 towns →
+              Browse all 100 towns →
             </Link>
           </div>
         </div>

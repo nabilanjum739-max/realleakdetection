@@ -11,6 +11,11 @@ const METROS = [
   { slug: "san-antonio", label: "San Antonio" },
   { slug: "austin", label: "Austin" },
   { slug: "fort-worth", label: "Fort Worth" },
+  { slug: "el-paso", label: "El Paso" },
+  { slug: "mcallen", label: "McAllen" },
+  { slug: "corpus-christi", label: "Corpus Christi" },
+  { slug: "lubbock", label: "Lubbock" },
+  { slug: "amarillo", label: "Amarillo" },
 ];
 
 const NICHE_ICONS: Record<string, string> = {
@@ -79,7 +84,7 @@ export default function Home() {
             </a>
           </div>
           <ul className="mx-auto mt-12 flex max-w-2xl flex-col items-center justify-center gap-3 text-sm font-semibold text-blue-100 sm:flex-row sm:gap-8">
-            {["50 towns researched", "Real local data", "Published pricing"].map((t) => (
+            {["100 towns researched", "Real local data", "Published pricing"].map((t) => (
               <li key={t} className="flex items-center gap-2">
                 <CheckIcon /> {t}
               </li>
@@ -154,7 +159,7 @@ export default function Home() {
       <section id="areas" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
         <h2 className="text-center text-3xl font-extrabold tracking-tight text-blue-950">Service areas</h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
-          Live now: 5 Texas metros, 50 towns — more states coming as each guide meets our research bar.
+          Live now: 10 Texas metros, 100 towns — more states coming as each guide meets our research bar.
         </p>
         <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {METROS.map((m) => (

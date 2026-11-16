@@ -12,10 +12,10 @@ on:
   workflow_dispatch:
     inputs:
       metro:
-        description: "Metro slug (houston, dallas, san-antonio, austin, fort-worth)"
+        description: "Metro slug (houston, dallas, san-antonio, austin, fort-worth, el-paso, mcallen, corpus-christi, lubbock, amarillo)"
         required: true
         type: choice
-        options: [houston, dallas, san-antonio, austin, fort-worth]
+        options: [houston, dallas, san-antonio, austin, fort-worth, el-paso, mcallen, corpus-christi, lubbock, amarillo]
       town:
         description: "Town slug, e.g. katy (lowercase, hyphens)"
         required: true

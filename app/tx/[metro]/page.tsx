@@ -12,6 +12,11 @@ const METRO_LABEL: Record<string, string> = {
   "san-antonio": "San Antonio",
   austin: "Austin",
   "fort-worth": "Fort Worth",
+  "el-paso": "El Paso",
+  mcallen: "McAllen",
+  "corpus-christi": "Corpus Christi",
+  lubbock: "Lubbock",
+  amarillo: "Amarillo",
 };
 
 const METRO_BLURB: Record<string, string> = {
@@ -20,9 +25,14 @@ const METRO_BLURB: Record<string, string> = {
   "san-antonio": "Limestone, clay pockets and hard water shape San Antonio-area leaks. Pick your town for soil-specific guidance and honest local pricing.",
   austin: "Hill Country limestone meets expansive clay across Austin's suburbs — plus freeze risk most winters. Every guide is built on verified local data.",
   "fort-worth": "Western clay soils and older housing stock drive Fort Worth-area leaks. Choose your town for the full researched guide.",
+  "el-paso": "Hot desert soils over hard caliche — and 52 freezing nights a year — shape El Paso-area leaks. Each town guide covers the local soil, home ages and what detection really costs.",
+  mcallen: "Hidalgo sandy clay loam dominates the Rio Grande Valley, with cracking Harlingen and Mercedes clays — and 100°F+ heat most of the year. Each town guide covers the local soil, home ages and what detection really costs.",
+  "corpus-christi": "Expansive Victoria clay — very-high shrink-swell across 58% of Nueces County — plus hurricane exposure shape Corpus Christi-area leaks. Pick your town for soil-specific guidance and honest local pricing.",
+  lubbock: "Caliche-rich High Plains soils over the Ogallala — with ~84 frost days and ~60 freeze-thaw cycles a year — punish Lubbock-area pipes. Every guide is built on verified local data.",
+  amarillo: "Pullman clay loam over dense caliche — high shrink-swell — plus 108 frost days a year shape Amarillo-area leaks. Choose your town for the full researched guide.",
 };
 
-/** Prerender the 5 city hubs at build time. */
+/** Prerender the 10 city hubs at build time. */
 export function generateStaticParams() {
   return Object.keys(METRO_LABEL).map((metro) => ({ metro }));
 }

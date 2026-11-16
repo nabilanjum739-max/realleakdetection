@@ -1,6 +1,6 @@
 # ============================================================
 # Freeze-Burst Risk Tonight — nightly forecast refresh
-# Fetches the Open-Meteo forecast (free, no API key) for all 50
+# Fetches the Open-Meteo forecast (free, no API key) for all 100
 # towns and commits public/data/freeze-risk.json, which the
 # FreezeRiskTonight tool reads. The tool prefers this file when
 # its forecast_date is today (America/Chicago) and falls back to

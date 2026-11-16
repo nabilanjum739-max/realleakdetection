@@ -1,11 +1,31 @@
 {
-  "generated_at_utc": "2026-11-16T07:48:12Z",
+  "generated_at_utc": "2026-11-16T07:58:57Z",
   "forecast_date": "2026-11-16",
   "forecast_night": "Night of Nov 16, 2026 (6pm-9am Central)",
   "source": "Open-Meteo forecast API (https://open-meteo.com)",
   "timezone": "America/Chicago",
   "window": "18:00-09:00 local, inclusive",
   "towns": {
+    "abernathy": {
+      "town": "Abernathy",
+      "metro": "Lubbock",
+      "low_f": 43.7,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "alamo": {
+      "town": "Alamo",
+      "metro": "McAllen",
+      "low_f": 54.5,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "alamo-heights": {
       "town": "Alamo Heights",
       "metro": "San Antonio",
@@ -16,10 +36,50 @@
       "band": "low",
       "readings": 16
     },
+    "alice": {
+      "town": "Alice",
+      "metro": "Corpus Christi",
+      "low_f": 50.6,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "allen": {
       "town": "Allen",
       "metro": "Dallas",
       "low_f": 40.2,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "amarillo": {
+      "town": "Amarillo",
+      "metro": "Amarillo",
+      "low_f": 41.5,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "anthony": {
+      "town": "Anthony",
+      "metro": "El Paso",
+      "low_f": 45.2,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "aransas-pass": {
+      "town": "Aransas Pass",
+      "metro": "Corpus Christi",
+      "low_f": 52.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -56,6 +116,16 @@
       "band": "low",
       "readings": 16
     },
+    "borger": {
+      "town": "Borger",
+      "metro": "Amarillo",
+      "low_f": 43.2,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "buda": {
       "town": "Buda",
       "metro": "Austin",
@@ -70,6 +140,26 @@
       "town": "Burleson",
       "metro": "Fort Worth",
       "low_f": 40.1,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "canutillo": {
+      "town": "Canutillo",
+      "metro": "El Paso",
+      "low_f": 45.7,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "canyon": {
+      "town": "Canyon",
+      "metro": "Amarillo",
+      "low_f": 42.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -106,6 +196,16 @@
       "band": "low",
       "readings": 16
     },
+    "clint": {
+      "town": "Clint",
+      "metro": "El Paso",
+      "low_f": 46.4,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "conroe": {
       "town": "Conroe",
       "metro": "Houston",
@@ -126,10 +226,30 @@
       "band": "low",
       "readings": 16
     },
+    "corpus-christi": {
+      "town": "Corpus Christi",
+      "metro": "Corpus Christi",
+      "low_f": 52.2,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "cypress": {
       "town": "Cypress",
       "metro": "Houston",
       "low_f": 45.4,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "dalhart": {
+      "town": "Dalhart",
+      "metro": "Amarillo",
+      "low_f": 41.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -146,10 +266,50 @@
       "band": "low",
       "readings": 16
     },
+    "donna": {
+      "town": "Donna",
+      "metro": "McAllen",
+      "low_f": 54.4,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "dripping-springs": {
       "town": "Dripping Springs",
       "metro": "Austin",
       "low_f": 41.9,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "dumas": {
+      "town": "Dumas",
+      "metro": "Amarillo",
+      "low_f": 41.3,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "edinburg": {
+      "town": "Edinburg",
+      "metro": "McAllen",
+      "low_f": 55.0,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "el-paso": {
+      "town": "El Paso",
+      "metro": "El Paso",
+      "low_f": 47.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -166,10 +326,30 @@
       "band": "low",
       "readings": 16
     },
+    "fabens": {
+      "town": "Fabens",
+      "metro": "El Paso",
+      "low_f": 46.9,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "frisco": {
       "town": "Frisco",
       "metro": "Dallas",
       "low_f": 42.1,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "fritch": {
+      "town": "Fritch",
+      "metro": "Amarillo",
+      "low_f": 42.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -216,10 +396,60 @@
       "band": "low",
       "readings": 16
     },
+    "hereford": {
+      "town": "Hereford",
+      "metro": "Amarillo",
+      "low_f": 41.2,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "hidalgo": {
+      "town": "Hidalgo",
+      "metro": "McAllen",
+      "low_f": 55.8,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "horizon-city": {
+      "town": "Horizon City",
+      "metro": "El Paso",
+      "low_f": 46.2,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "humble": {
       "town": "Humble",
       "metro": "Houston",
       "low_f": 43.3,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "idalou": {
+      "town": "Idalou",
+      "metro": "Lubbock",
+      "low_f": 44.2,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "ingleside": {
+      "town": "Ingleside",
+      "metro": "Corpus Christi",
+      "low_f": 51.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -306,10 +536,30 @@
       "band": "low",
       "readings": 16
     },
+    "levelland": {
+      "town": "Levelland",
+      "metro": "Lubbock",
+      "low_f": 43.3,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "lewisville": {
       "town": "Lewisville",
       "metro": "Dallas",
       "low_f": 41.4,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "littlefield": {
+      "town": "Littlefield",
+      "metro": "Lubbock",
+      "low_f": 42.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -326,6 +576,16 @@
       "band": "low",
       "readings": 16
     },
+    "lubbock": {
+      "town": "Lubbock",
+      "metro": "Lubbock",
+      "low_f": 44.3,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "mansfield": {
       "town": "Mansfield",
       "metro": "Fort Worth",
@@ -336,10 +596,50 @@
       "band": "low",
       "readings": 16
     },
+    "mathis": {
+      "town": "Mathis",
+      "metro": "Corpus Christi",
+      "low_f": 48.8,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "mcallen": {
+      "town": "McAllen",
+      "metro": "McAllen",
+      "low_f": 55.9,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "mckinney": {
       "town": "McKinney",
       "metro": "Dallas",
       "low_f": 38.5,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "mercedes": {
+      "town": "Mercedes",
+      "metro": "McAllen",
+      "low_f": 53.9,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "mission": {
+      "town": "Mission",
+      "metro": "McAllen",
+      "low_f": 56.4,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -366,6 +666,16 @@
       "band": "low",
       "readings": 16
     },
+    "pampa": {
+      "town": "Pampa",
+      "metro": "Amarillo",
+      "low_f": 42.3,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "pasadena": {
       "town": "Pasadena",
       "metro": "Houston",
@@ -386,10 +696,40 @@
       "band": "low",
       "readings": 16
     },
+    "perryton": {
+      "town": "Perryton",
+      "metro": "Amarillo",
+      "low_f": 43.1,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "pflugerville": {
       "town": "Pflugerville",
       "metro": "Austin",
       "low_f": 44.0,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "pharr": {
+      "town": "Pharr",
+      "metro": "McAllen",
+      "low_f": 54.5,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "plainview": {
+      "town": "Plainview",
+      "metro": "Lubbock",
+      "low_f": 43.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -406,6 +746,36 @@
       "band": "low",
       "readings": 16
     },
+    "port-aransas": {
+      "town": "Port Aransas",
+      "metro": "Corpus Christi",
+      "low_f": 56.0,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "portland": {
+      "town": "Portland",
+      "metro": "Corpus Christi",
+      "low_f": 49.9,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "ralls": {
+      "town": "Ralls",
+      "metro": "Lubbock",
+      "low_f": 43.4,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "richardson": {
       "town": "Richardson",
       "metro": "Dallas",
@@ -416,10 +786,50 @@
       "band": "low",
       "readings": 16
     },
+    "robstown": {
+      "town": "Robstown",
+      "metro": "Corpus Christi",
+      "low_f": 50.8,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "rockport": {
+      "town": "Rockport",
+      "metro": "Corpus Christi",
+      "low_f": 53.1,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "round-rock": {
       "town": "Round Rock",
       "metro": "Austin",
       "low_f": 42.7,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "san-elizario": {
+      "town": "San Elizario",
+      "metro": "El Paso",
+      "low_f": 43.4,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "san-juan": {
+      "town": "San Juan",
+      "metro": "McAllen",
+      "low_f": 54.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -450,6 +860,46 @@
       "town": "Selma",
       "metro": "San Antonio",
       "low_f": 44.2,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "shallowater": {
+      "town": "Shallowater",
+      "metro": "Lubbock",
+      "low_f": 44.2,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "sinton": {
+      "town": "Sinton",
+      "metro": "Corpus Christi",
+      "low_f": 50.6,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "slaton": {
+      "town": "Slaton",
+      "metro": "Lubbock",
+      "low_f": 44.5,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "socorro": {
+      "town": "Socorro",
+      "metro": "El Paso",
+      "low_f": 43.3,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -496,10 +946,60 @@
       "band": "low",
       "readings": 16
     },
+    "tulia": {
+      "town": "Tulia",
+      "metro": "Amarillo",
+      "low_f": 42.1,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
     "universal-city": {
       "town": "Universal City",
       "metro": "San Antonio",
       "low_f": 44.6,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "vinton": {
+      "town": "Vinton",
+      "metro": "El Paso",
+      "low_f": 44.6,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "weslaco": {
+      "town": "Weslaco",
+      "metro": "McAllen",
+      "low_f": 54.4,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "westway": {
+      "town": "Westway",
+      "metro": "El Paso",
+      "low_f": 44.1,
+      "freeze_hours": 0,
+      "hard_freeze_hours": 0,
+      "hard_freeze": false,
+      "band": "low",
+      "readings": 16
+    },
+    "wolfforth": {
+      "town": "Wolfforth",
+      "metro": "Lubbock",
+      "low_f": 44.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,

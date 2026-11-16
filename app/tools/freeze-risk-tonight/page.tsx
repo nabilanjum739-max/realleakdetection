@@ -180,7 +180,7 @@ export default function FreezeRiskTonightPage() {
         </p>
         <p className="mt-3 text-slate-600">
           <strong className="text-blue-950">How fresh is the forecast?</strong> A workflow refreshes
-          tonight&apos;s forecast for all 50 towns every night in freeze
+          tonight&apos;s forecast for all 100 towns every night in freeze
           season (November–March, 02:00 UTC) and weekly in summer. The
           tool shows whether its number came from that nightly file or a
           live fetch, and the date of the night it covers. If the nightly

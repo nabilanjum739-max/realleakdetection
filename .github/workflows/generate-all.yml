@@ -1,0 +1,62 @@
+# ============================================================
+# Leak Detection SEO — batch page generation (Groq, free tier)
+# Manual dispatch: loops over Supabase `towns` rows for the
+# selected metros whose page_status is NOT validated/published and
+# runs the SAME steps as the single-town generate-town-page
+# workflow for each, SEQUENTIALLY in one job (no parallel matrix —
+# the Groq free tier cannot take 100 towns at once).
+#
+# Per-town failures do NOT kill the batch: the failure is logged,
+# the loop continues, and a final summary step lists every failed
+# town (metro/town + which step failed) and the succeeded count, so
+# failures can be re-run one by one with generate-town-page.
+#
+# Timing: a full 100-town run takes several hours (Groq generation
+# is ~1-3 min per town). The job cap is 330 min (GitHub's is 360).
+# Prefer per-metro runs for big batches, e.g. metros=el-paso.
+# Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY, GROQ_API_KEY
+# ============================================================
+name: generate-all-towns
+
+on:
+  workflow_dispatch:
+    inputs:
+      metros:
+        description: "Metros to generate: 'all' or comma-separated metro slugs (houston, dallas, san-antonio, austin, fort-worth, el-paso, mcallen, corpus-christi, lubbock, amarillo)"
+        required: true
+        type: string
+        default: "all"
+      town:
+        description: "Optional single town slug, e.g. socorro (empty = all towns in the selected metros)"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  batch-generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GROQ_MODEL: ${{ secrets.GROQ_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pipeline deps
+        run: pip install -r scripts/requirements.txt
+
+      - name: Batch generate (sequential — failures logged, loop continues)
+        run: >
+          python scripts/batch-generate.py
+          --metros "${{ inputs.metros }}"
+          --town "${{ inputs.town }}"
+
+      - name: Batch summary (succeeded count + failed towns)
+        if: always()
+        run: python scripts/batch-generate.py --summarize
