@@ -36,6 +36,8 @@ jobs:
   batch-generate:
     runs-on: ubuntu-latest
     timeout-minutes: 330
+    permissions:
+      contents: write
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -56,6 +58,15 @@ jobs:
           python scripts/batch-generate.py
           --metros "${{ inputs.metros }}"
           --town "${{ inputs.town }}"
+
+      - name: Commit visuals (so the Vercel build serves them)
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/visuals/
+          git diff --cached --quiet || git commit -m "Batch visuals (${{ inputs.metros }})"
+          git push
 
       - name: Batch summary (succeeded count + failed towns)
         if: always()

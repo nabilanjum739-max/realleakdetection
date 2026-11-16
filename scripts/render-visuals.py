@@ -22,7 +22,7 @@ from pathlib import Path
 
 from common import PROJECT_ROOT, get_supabase, get_town_row
 
-OUT_BASE = PROJECT_ROOT / "site" / "public" / "visuals"
+OUT_BASE = PROJECT_ROOT / "public" / "visuals"
 
 FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
 

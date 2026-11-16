@@ -3,8 +3,10 @@
 # Manual dispatch per town: enrich -> generate -> validate (gate)
 # -> render visuals -> mark published.
 # A failing validation gate stops the job; the page never publishes.
-# Writes go straight to Supabase via the service key (no git commits).
-# Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY, GROQ_API_KEY
+# Writes go straight to Supabase via the service key — EXCEPT the rendered
+# visuals (SVG infographics), which are committed back to the repo so the
+# Vercel build can serve them from public/visuals/ (the town template reads
+# them at build time). Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY, GROQ_API_KEY
 # ============================================================
 name: generate-town-page
 
@@ -24,6 +26,8 @@ on:
 jobs:
   build-page:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -74,6 +78,14 @@ jobs:
           python scripts/render-visuals.py
           --metro "${{ inputs.metro }}"
           --town "${{ inputs.town }}"
+
+      - name: Commit visuals (so the Vercel build serves them)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/visuals/
+          git diff --cached --quiet || git commit -m "Visuals for ${{ inputs.metro }}/${{ inputs.town }}"
+          git push
 
       - name: Mark published
         run: >
