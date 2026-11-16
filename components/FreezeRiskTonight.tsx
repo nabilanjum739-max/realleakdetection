@@ -121,11 +121,12 @@ export default function FreezeRiskTonight({ town }: { town?: string }) {
   const [result, setResult] = useState<RiskResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const nightLabel = nightLabelFor(new Date());
-
   const loadTown = async (townSlug: string) => {
     const t = FREEZE_TOWNS.find((x) => x.slug === townSlug);
     if (!t) return;
+    // Computed here (event handler), never during render: Next.js blocks
+    // `new Date()` reads while prerendering a Client Component.
+    const label = nightLabelFor(new Date());
     setStatus("loading");
     setError(null);
     setResult(null);
@@ -146,7 +147,7 @@ export default function FreezeRiskTonight({ town }: { town?: string }) {
               band: entry.band,
               source: "nightly",
               generatedAt: data.generated_at_utc,
-              nightLabel,
+              nightLabel: label,
             });
             setStatus("ready");
             return;
@@ -158,7 +159,7 @@ export default function FreezeRiskTonight({ town }: { town?: string }) {
       // 2) Live fallback: Open-Meteo forecast at the town's coordinates.
       const hourly = await fetchForecast(t.lat, t.lon);
       const assessed = assessHourly(hourly.time, hourly.temperature_2m);
-      setResult({ place: `${t.town}, TX`, ...assessed, source: "live", nightLabel });
+      setResult({ place: `${t.town}, TX`, ...assessed, source: "live", nightLabel: label });
       setStatus("ready");
     } catch {
       setError("Could not load tonight's forecast right now. Check your connection and try again — or use the typical freeze-season table below, which needs no forecast.");
@@ -172,6 +173,8 @@ export default function FreezeRiskTonight({ town }: { town?: string }) {
       setError("Enter a 5-digit ZIP code — or pick a town from the list.");
       return;
     }
+    // Same as loadTown: compute the label here, never during render.
+    const label = nightLabelFor(new Date());
     setStatus("loading");
     setError(null);
     setResult(null);
@@ -191,7 +194,7 @@ export default function FreezeRiskTonight({ town }: { town?: string }) {
       const hourly = await fetchForecast(hit.latitude, hit.longitude);
       const assessed = assessHourly(hourly.time, hourly.temperature_2m);
       const place = `${hit.name}, ${hit.admin1 === "Texas" ? "TX" : hit.admin1 ?? "US"}`;
-      setResult({ place, ...assessed, source: "live", nightLabel });
+      setResult({ place, ...assessed, source: "live", nightLabel: label });
       setStatus("ready");
     } catch {
       setError("Could not look up that ZIP right now. Pick a town from the list instead.");
