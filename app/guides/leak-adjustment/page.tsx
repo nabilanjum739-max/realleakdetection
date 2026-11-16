@@ -8,12 +8,12 @@ import { METRO_ADJUSTMENT_ROWS } from "@/lib/adjustment-pages";
 /**
  * Leak adjustments in Texas — index of all 10 metros.
  *
- * First wave (Nov 16, 2026): 5 verified city guides — San Antonio,
- * Austin, Fort Worth, El Paso, Amarillo. Houston and Dallas have
- * verified rules but no guide in this wave: WaterShortcut owns both
- * cities, so the index links the official city pages instead. McAllen,
- * Corpus Christi (water-side) and Lubbock have no verified published
- * policy, so the index says so honestly rather than inventing a rule.
+ * Seven metros have a verified city guide — San Antonio, Austin,
+ * Fort Worth, El Paso, Amarillo, Houston, and Dallas. Houston and
+ * Dallas were added in Phase 2 (Nov 16, 2026) as beat-pages against
+ * WaterShortcut. McAllen, Corpus Christi (water-side) and Lubbock have
+ * no verified published policy, so each gets an honest "no written
+ * policy found" guide instead of an invented rule.
  *
  * Scope rule stated on this page and every city page: the anchor-city
  * rule covers the anchor city itself. The metro towns run their own
@@ -26,7 +26,7 @@ import { METRO_ADJUSTMENT_ROWS } from "@/lib/adjustment-pages";
 export const metadata: Metadata = {
   title: "Texas Leak Adjustment Rules by City | Real Leak Detection".slice(0, 60),
   description:
-    "Leak adjustment rules for Texas utilities by city: what qualifies, the credit, the deadline, and where to apply. 5 verified guides, checked Nov 16, 2026.".slice(
+    "Leak adjustment rules for Texas utilities by city: what qualifies, the credit, the deadline, and where to apply. 7 verified guides + 3 no-policy guides, checked Nov 16, 2026.".slice(
       0,
       155
     ),
@@ -110,12 +110,13 @@ export default function LeakAdjustmentIndexPage() {
 
         <h2 className="mt-12 text-2xl font-extrabold text-blue-950">All 10 metros — status</h2>
         <p className="mt-3 text-slate-600">
-          Five metros have a verified guide in this wave. Houston and
-          Dallas have verified rules too, but WaterShortcut already owns
-          both cities with check dates and official links, so no guide is
-          built for them yet — the official city pages are linked instead.
-          Three metros have no verified published policy at all, and this
-          table says so rather than guessing.
+          Seven metros have a verified guide, including Houston and Dallas
+          — added in Phase 2 as full beat-pages with a worked dollar
+          example, a deadline countdown, and the eligibility checker at
+          the top. Three metros have no verified published policy at all,
+          and each of those gets an honest &ldquo;no written policy
+          found&rdquo; guide — what was checked, the ask-the-utility
+          script, and the proof checklist — rather than a guessed rule.
         </p>
         <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200">
           <table className="w-full text-left text-sm">
@@ -175,8 +176,10 @@ export default function LeakAdjustmentIndexPage() {
           policy at all and vote on credits case by case. The explainer
           covers the one fully verified MUD rule (Harris County MUD 71),
           the partial rules (MUD 501 and 82), the verified Brushy Creek
-          sewer-average example ($423.40 → $40.04), and how to find which
-          MUD serves your home.
+          sewer-average example ($423.40 → $40.04), and a directory table
+          for Harris County MUD 501, 71, and 365 — MUD 365 has no verified
+          terms yet, and its row says so. It also explains how to find
+          which MUD serves your home.
         </p>
         <p className="mt-4">
           <Link href="/guides/leak-adjustment/mud/" className="font-bold text-blue-800 hover:underline">
@@ -284,11 +287,14 @@ export default function LeakAdjustmentIndexPage() {
         <p className="mt-3 text-slate-600">
           Houston and Dallas rules were verified from the same official
           sources (City of Houston Universal Adjustment Request page; City
-          of Dallas leak adjustment page) but no guide is published for
-          them in this wave — the SERP study found WaterShortcut owns both
-          cities with check dates and official links, and official city
-          pages will always outrank a third-party guide for their own form
-          query. We win on the guide plus the estimator, not the form.
+          of Dallas leak adjustment page) and are now published as full
+          guides in this wave — each with a worked dollar example, a
+          deadline countdown, the eligibility checker, and, for Houston,
+          the City-vs-MUD table. The Houston and Dallas official pages
+          were re-checked live on Nov 16, 2026: Houston's 100/75/50%
+          tiers and 6-month deadline are confirmed on the form, Dallas
+          processing is up to 60 days, and Dallas's filing deadline is
+          still not stated on the city's current page.
         </p>
         <p className="mt-6 text-xs text-slate-400">
           Disclaimer: utility rules change. The status table above was

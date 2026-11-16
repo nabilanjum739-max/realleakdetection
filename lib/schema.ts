@@ -166,6 +166,31 @@ export function breadcrumbSchema(row: TownRow) {
   ]);
 }
 
+/**
+ * VideoObject for our own YouTube uploads (screen-recorded tool demos).
+ * Only ever called with a real videoId from lib/videos.ts or
+ * lib/town-videos.ts — never an invented ID, never a third-party video.
+ * uploadDate is included only when known (it is required for full
+ * VideoObject validity, so add it when the video is registered).
+ */
+export function videoObjectSchema(video: {
+  videoId: string;
+  title: string;
+  description: string;
+  uploadDate?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: video.title,
+    description: video.description,
+    thumbnailUrl: `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`,
+    ...(video.uploadDate ? { uploadDate: video.uploadDate } : {}),
+    contentUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
+    embedUrl: `https://www.youtube.com/embed/${video.videoId}`,
+  };
+}
+
 export function speakableSchema() {
   return {
     "@context": "https://schema.org",

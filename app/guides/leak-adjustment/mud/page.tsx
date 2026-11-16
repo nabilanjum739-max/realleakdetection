@@ -5,6 +5,7 @@ import { breadcrumbListSchema, faqPageSchemaFromQAs } from "@/lib/schema";
 import CtaBand from "@/components/CtaBand";
 import {
   BRUSHY_CREEK_EXAMPLE,
+  MUD_DIRECTORY,
   MUD_FAQS,
   MUD_FIND_STEPS,
   MUD_FIND_TCEQ_URL,
@@ -207,6 +208,68 @@ export default function MudLeakAdjustmentPage() {
             </article>
           ))}
         </div>
+
+        <h2 className="mt-12 text-2xl font-extrabold text-blue-950">
+          MUD directory — Harris County MUD 501, 71, and 365
+        </h2>
+        <p className="mt-3 text-slate-600">
+          The three largest Houston-area MUDs readers ask about, side by
+          side. Only verified terms are shown as rules: MUD 71 is fully
+          verified, MUD 501 is part-verified, and MUD 365 has no verified
+          terms in our research file at all — its row says so instead of
+          repeating figures from an unverified source. More MUDs need a
+          second research pass before they can join this directory.
+        </p>
+        <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-slate-600">
+                <th className="p-4 font-bold">District</th>
+                <th className="p-4 font-bold">Deadline / limits</th>
+                <th className="p-4 font-bold">Credit</th>
+                <th className="p-4 font-bold">Proof / how to apply</th>
+                <th className="p-4 font-bold">Source</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-700">
+              {MUD_DIRECTORY.map((mud) => (
+                <tr key={mud.name}>
+                  <td className="p-4">
+                    <span className="font-bold text-blue-950">{mud.name}</span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      {mud.area} · {mud.statusLabel}
+                    </span>
+                  </td>
+                  <td className="p-4">{mud.deadline}</td>
+                  <td className="p-4">{mud.credit}</td>
+                  <td className="p-4">{mud.proof}</td>
+                  <td className="p-4">
+                    {mud.sourceUrl && mud.sourceLabel ? (
+                      <a
+                        href={mud.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-blue-800 hover:underline"
+                      >
+                        {mud.sourceLabel} →
+                      </a>
+                    ) : (
+                      "No verified source — confirm with the district"
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-4 text-slate-600">
+          The Houston city guide carries the same three districts in its{" "}
+          <Link href="/guides/leak-adjustment/houston/" className="font-bold text-blue-800 hover:underline">
+            City vs MUD section
+          </Link>
+          . If your district is not in this table, the steps above — bill,
+          Find My District, TCEQ viewer — are still the way to find it.
+        </p>
 
         <h2 className="mt-12 text-2xl font-extrabold text-blue-950">
           Eye On Water: the precondition some MUDs require

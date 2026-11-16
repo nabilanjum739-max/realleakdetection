@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/site";
 import { breadcrumbListSchema, faqPageSchemaFromQAs } from "@/lib/schema";
 import { TOWN_PRICES, type TownPrice } from "@/lib/town-prices";
 import CtaBand from "@/components/CtaBand";
+import GuideVideo from "@/components/GuideVideo";
 
 /**
  * Leak detection cost in Texas — cost hub page.
@@ -200,6 +201,10 @@ export default function LeakDetectionCostTexasPage() {
           </p>
         </div>
       </section>
+
+      {/* Video demo — renders nothing until a real videoId is registered
+          in lib/videos.ts for this page. */}
+      <GuideVideo pageKey="/guides/leak-detection-cost/" />
 
       <section className="mx-auto max-w-4xl px-4 py-14">
         <h2 className="text-2xl font-extrabold text-blue-950">Leak detection prices by Texas metro</h2>

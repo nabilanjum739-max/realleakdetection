@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
 import { breadcrumbListSchema } from "@/lib/schema";
 import CtaBand from "@/components/CtaBand";
+import GuideVideo from "@/components/GuideVideo";
 
 /**
  * Tools hub — the index for all 12 free tools.
@@ -147,6 +148,10 @@ export default function ToolsHubPage() {
           </p>
         </div>
       </section>
+
+      {/* Video demo — renders nothing until a real videoId is registered
+          in lib/videos.ts for this page. */}
+      <GuideVideo pageKey="/tools/" />
 
       <section className="mx-auto max-w-4xl px-4 py-14">
         <h2 className="text-2xl font-extrabold text-blue-950">For homeowners</h2>

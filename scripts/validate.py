@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""The 11-point validation gate (TEMPLATE.md) as checkable code.
+"""The 11-point validation gate (TEMPLATE.md) as checkable code, plus the
+§3.3 checks (12–17: article-body budget, symptom + pricing tables,
+N-section headings, banned claims words, no repeated cost line).
 
 Checks a generated town page (Supabase row + page_html) and the site
 scaffold. Prints PASS/FAIL per rule. Exits non-zero on ANY failure —
@@ -7,6 +9,9 @@ the GitHub Action stops and the page never publishes.
 
 Usage:
     python scripts/validate.py --metro houston --town katy
+    python scripts/validate.py --metro houston --town katy \
+        --html-file /tmp/katy.html --row-json /tmp/katy-row.json
+        # local fixture mode: no Supabase access, same checks
 """
 import argparse
 import re
@@ -16,7 +21,8 @@ from pathlib import Path
 
 from common import PROJECT_ROOT, RESEARCH_COLUMNS, get_supabase, get_town_row
 
-SITE_DIR = PROJECT_ROOT  # site lives at repo root (not under site/)
+# The Next.js site lives under site/ (schema builder: site/lib/schema.ts).
+SITE_DIR = PROJECT_ROOT / "site"
 
 # ---- mirrors site/lib/site.ts buildTitle/buildMetaDescription (TEMPLATE.md §1)
 def build_title(town: str) -> str:
@@ -54,6 +60,61 @@ BANNED_PHRASES = [
 ]
 PLACEHOLDERS = ["[town]", "{{", "}}", "lorem", "xxx",
                 "your town here", "xyz plumbing"]
+
+# §3.3 banned claims — must not appear anywhere in article text. (The
+# generation prompt bans the same words; the gate is the backstop.)
+# "free" alone is too broad (e.g. "feel free"); only the claim phrases.
+BANNED_CLAIMS = [
+    ("specialist", re.compile(r"\bspecialist\b", re.I)),
+    ("expert", re.compile(r"\bexpert\b", re.I)),
+    ("same-day", re.compile(r"\bsame[\s-]?day\b", re.I)),
+    ("free assessment", re.compile(r"\bfree assessment\b", re.I)),
+    ("free quotes", re.compile(r"\bfree quotes?\b", re.I)),
+    ("single visit", re.compile(r"\bsingle visit\b", re.I)),
+]
+
+# N-section H2 headings the §3.3 spec requires (tolerant wording — match
+# on the distinctive phrase, not an exact title).
+N_HEADINGS = [
+    ("N1 local factor", re.compile(r"(why .* pipes fail|local factor)", re.I)),
+    ("N3 neighbourhoods", re.compile(r"neighbourhood|neighborhood", re.I)),
+    ("N6 insurance", re.compile(r"insurance", re.I)),
+    ("N7 city water / MUD", re.compile(r"(city water or mud|who bills you|leak adjustment)", re.I)),
+    ("N8 seasonal", re.compile(r"by season|seasonal", re.I)),
+    ("N9 questions to ask", re.compile(r"(questions to ask|what to ask any)", re.I)),
+    ("N11 real questions", re.compile(r"real .* questions", re.I)),
+    ("N12 how we compare", re.compile(r"(how we compare|what to demand)", re.I)),
+]
+
+# Article-body budget (§3.3): hard cap, measured on the same article text
+# the prompt produces (all text inside <article>, tables + FAQ included).
+BODY_MIN, BODY_MAX = 3700, 4100
+
+
+def tables(html: str) -> list[str]:
+    """Plain-text contents of every <table> in the article."""
+    out = []
+    for m in re.finditer(r"<table.*?</table>", html, re.DOTALL | re.I):
+        out.append(re.sub(r"<[^>]+>", " ", m.group(0)))
+    return out
+
+
+def dollar_ranges(s: str) -> list[str]:
+    """Normalised $ ranges in a text fragment, e.g. '$150-$400'.
+
+    Normalises en/em dashes and hyphen-minus to '-', strips spaces and
+    commas, so '$150–$400' and '$150 - $400' count as the same range.
+    """
+    found = []
+    for m in re.finditer(r"\$\s*([\d,]+)\s*[–—\-]\s*\$?\s*([\d,]+)", s):
+        found.append(f"${m.group(1).replace(',', '')}-${m.group(2).replace(',', '')}")
+    return found
+
+
+def amounts(s: str) -> list[str]:
+    """Bare dollar amounts in a text fragment, normalised ('$150')."""
+    return [f"${m.group(1).replace(',', '')}"
+            for m in re.finditer(r"\$\s*([\d,]+)", s)]
 
 
 class SectionParser(HTMLParser):
@@ -137,12 +198,28 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--metro", required=True)
     ap.add_argument("--town", required=True)
+    ap.add_argument("--html-file", default=None,
+                    help="Local fixture: read page_html from this file "
+                         "instead of Supabase (with --row-json).")
+    ap.add_argument("--row-json", default=None,
+                    help="Local fixture: town row as JSON (town, "
+                         "metro_slug, town_slug, parent_metro, "
+                         "neighborhoods, price_* fields, omission_log, "
+                         "page_status). Required with --html-file.")
     args = ap.parse_args()
     g = Gate()
 
-    sb = get_supabase()
-    row = get_town_row(sb, args.metro, args.town)
-    html = row.get("page_html") or ""
+    if args.html_file:
+        import json
+        if not args.row_json:
+            print("--html-file requires --row-json", file=sys.stderr)
+            raise SystemExit(2)
+        html = Path(args.html_file).read_text()
+        row = json.loads(Path(args.row_json).read_text())
+    else:
+        sb = get_supabase()
+        row = get_town_row(sb, args.metro, args.town)
+        html = row.get("page_html") or ""
     omission = row.get("omission_log") or {}
     text = re.sub(r"<[^>]+>", " ", html).lower()
 
@@ -257,6 +334,63 @@ def main() -> None:
     g.check("11. internal links in article (≥3 siblings, ≥4 pillars)",
             links_ok,
             f"{len(sib_slugs)} sibling links, {len(pillar_slugs)} pillar links")
+
+    # 12. article-body budget (§3.3 hard cap, same body the prompt
+    # produces — all text inside <article>, tables + FAQ included).
+    # Check 3a's 2,000–6,500 range is kept as-is; this is the tighter cap.
+    g.check(f"12. article body {BODY_MIN:,}–{BODY_MAX:,} words",
+            BODY_MIN <= total <= BODY_MAX, f"{total} words")
+
+    # 13. symptom table (N2): a table carrying urgency values.
+    tbls = tables(html)
+    urg_words = ("today", "this week", "soon", "911")
+    sym_ok = any("urgency" in t.lower() and
+                 sum(w in t.lower() for w in urg_words) >= 2 for t in tbls)
+    g.check("13. symptom table present (N2, with urgency values)", sym_ok,
+            "no table with 'Urgency' + urgency values found" if not sym_ok else "")
+
+    # 14. pricing table (N5): a table carrying the researched detection
+    # and camera ranges from the town row.
+    det_amounts = amounts(row.get("price_leak_detection") or "")
+    cam_amounts = amounts(row.get("price_sewer_camera") or "")
+    price_ok = False
+    if det_amounts and cam_amounts:
+        price_ok = any(det_amounts[0].lower() in t.lower() and
+                       cam_amounts[0].lower() in t.lower() for t in tbls)
+    g.check("14. pricing table present (N5, researched detection/camera ranges)",
+            price_ok,
+            f"detection {det_amounts[:1]}, camera {cam_amounts[:1]} not both in one table"
+            if not price_ok else "")
+
+    # 15. N-section headings present (H2 match, tolerant wording).
+    h2_texts = [h for h, _ in parser.sections]
+    missing_n = [label for label, pat in N_HEADINGS
+                 if not any(pat.search(h) for h in h2_texts)]
+    g.check("15. N1/N3/N6/N7/N8/N9/N11/N12 headings present", not missing_n,
+            f"missing: {missing_n}")
+
+    # 16. banned claims words nowhere in article text.
+    found_claims = [label for label, pat in BANNED_CLAIMS if pat.search(text)]
+    g.check("16. no banned claims words (specialist/expert/same-day/"
+            "free assessment/free quotes/single visit)", not found_claims,
+            f"found: {found_claims}")
+
+    # 17. no repeated cost-line pattern: the same $ range appearing in
+    # >3 service sections means the per-section cost line is back.
+    range_sections: dict[str, int] = {}
+    for key in SERVICE_H2_KEYS:
+        match = next(((h, b) for h, b in parser.sections
+                      if key in h.lower()), None)
+        if not match:
+            continue
+        for r in set(dollar_ranges(match[1])):
+            range_sections[r] = range_sections.get(r, 0) + 1
+    worst = max(range_sections.items(), key=lambda kv: kv[1],
+                default=(None, 0))
+    g.check("17. no repeated cost line (same $ range in ≤3 service sections)",
+            worst[1] <= 3,
+            f"{worst[0]} appears in {worst[1]} service sections"
+            if worst[1] > 3 else "")
 
     print(f"\n{len(g.failures)} check(s) failed.")
     raise SystemExit(1 if g.failures else 0)

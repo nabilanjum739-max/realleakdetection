@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/site";
 import { breadcrumbListSchema, faqPageSchemaFromQAs } from "@/lib/schema";
 import FreezeRiskTonight from "@/components/FreezeRiskTonight";
 import CtaBand from "@/components/CtaBand";
+import GuideVideo from "@/components/GuideVideo";
 
 /**
  * Freeze-Burst Risk Tonight — tool page #2.
@@ -110,6 +111,10 @@ export default function FreezeRiskTonightPage() {
       </section>
 
       <FreezeRiskTonight />
+
+      {/* Video demo — renders nothing until a real videoId is registered
+          in lib/videos.ts for this page. */}
+      <GuideVideo pageKey="/tools/freeze-risk-tonight/" />
 
       <section className="mx-auto max-w-4xl px-4 py-14">
         <h2 className="text-2xl font-extrabold text-blue-950">How the risk band is calculated</h2>

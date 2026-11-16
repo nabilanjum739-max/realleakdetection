@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/site";
 import { breadcrumbListSchema, faqPageSchemaFromQAs } from "@/lib/schema";
 import BillSpikeSplitter from "@/components/BillSpikeSplitter";
 import CtaBand from "@/components/CtaBand";
+import GuideVideo from "@/components/GuideVideo";
 
 /**
  * Water Bill Spike Splitter — tool page #1.
@@ -110,6 +111,10 @@ export default function WaterBillSpikePage() {
       </section>
 
       <BillSpikeSplitter />
+
+      {/* Video demo — renders nothing until a real videoId is registered
+          in lib/videos.ts for this page. */}
+      <GuideVideo pageKey="/tools/water-bill-spike/" />
 
       <section className="mx-auto max-w-4xl px-4 py-14">
         <h2 className="text-2xl font-extrabold text-blue-950">How the split is calculated</h2>

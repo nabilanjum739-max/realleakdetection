@@ -31,6 +31,26 @@ export interface AdjustmentStep {
   text: string;
 }
 
+export interface AdjustmentWorkedExample {
+  intro: string;
+  lines: string[];
+  note: string;
+}
+
+export interface AdjustmentMudRow {
+  name: string;
+  area: string;
+  terms: string;
+  statusLabel: string;
+  sourceUrl: string | null;
+  sourceLabel: string | null;
+}
+
+export interface AdjustmentRelatedTown {
+  label: string;
+  path: string;
+}
+
 export interface AdjustmentCityPage {
   slug: string;
   city: string;
@@ -53,12 +73,50 @@ export interface AdjustmentCityPage {
   rule: UtilityRule;
   /** Town-guide route when the anchor city is one of our researched towns, else null. */
   townGuidePath: string | null;
+  /** True when no written policy was found: the page leads with that
+   *  honestly instead of a rule table. */
+  noPolicy?: boolean;
+  /** Phone to call when no published policy exists (from research notes). */
+  phone?: string | null;
+  /** 40-word answer box (beat-page spec point 1). */
+  answerBox?: string;
+  /** Worked dollar example, labelled as an example (spec point 4). */
+  workedExample?: AdjustmentWorkedExample;
+  /** Deadline countdown as a timeline (spec point 5). */
+  deadlineTimeline?: string[];
+  /** "City vs MUD" table rows — Houston only (spec point 6). Terms not
+   *  in lib/utility-rules.ts are marked UNVERIFIED in the terms text. */
+  mudTable?: AdjustmentMudRow[];
+  /** Document pack (spec point 8). */
+  documentPack?: string[];
+  /** "What to do this week" checklist (spec point 9). */
+  weekChecklist?: string[];
+  /** Researched local context (spec point 10). */
+  localContext?: string[];
+  /** Ask-the-utility script — no-policy pages only. */
+  askScript?: string[];
+  /** Sources checked for a no-policy page (what was looked at, what
+   *  was not found). */
+  sourcesChecked?: string[];
+  /** Related town-guide routes for internal links (spec point 14). */
+  relatedTowns?: AdjustmentRelatedTown[];
 }
 
 function ruleForMetro(metro: string): UtilityRule {
   const rule = UTILITY_RULES.find((r) => r.metro === metro && r.adjustment);
   if (!rule || !rule.adjustment) {
     throw new Error(`No verified leak-adjustment rule for metro: ${metro}`);
+  }
+  return rule;
+}
+
+/** Like ruleForMetro, but also returns rules with adjustment === null
+ *  (McAllen, Corpus Christi, Lubbock — no published water-side policy).
+ *  The page renders those as "no written policy found" guides. */
+function ruleForMetroOrNull(metro: string): UtilityRule {
+  const rule = UTILITY_RULES.find((r) => r.metro === metro);
+  if (!rule) {
+    throw new Error(`No utility rule at all for metro: ${metro}`);
   }
   return rule;
 }
@@ -217,6 +275,24 @@ export const ADJUSTMENT_CITIES: AdjustmentCityPage[] = [
       "Whether the adjustment corrects the wastewater average is unverified.",
       "Customers who receive a leak adjustment may not request an administrative hearing under Chapter 15, Article 12 for the same billing period.",
     ],
+    answerBox:
+      "Austin Water credits 50% of the usage above your normal use for a hidden leak, under a 2011 City Council resolution. File within 90 days of the repair — that deadline is stated on the city's high-water-bill page.",
+    workedExample: {
+      intro:
+        "Example only — a sample bill run through the real rule. Normal month 8,000 gallons; leak month 35,000 gallons; excess 27,000 gallons. The dollar figures assume an illustrative rate of $5.00 per 1,000 gallons — not Austin Water's actual rate — so the excess water charge is 27 × $5.00 = $135.00. Your bill's rate will differ; the checker above uses your real numbers.",
+      lines: [
+        "Credit at 50% of the excess usage: 50% × $135.00 = $67.50.",
+        "You pay the remaining 50% — $67.50 — at the lower of the regular rate or an established discounted rate.",
+        "Covers up to two billing cycles, once per 12 months.",
+      ],
+      note: "The 50% figure comes from Council Resolution No. 20110512-003 (2011); the current city high-bill page does not restate it.",
+    },
+    deadlineTimeline: [
+      "Day 0 — the leak is repaired. The 90-day clock starts now, not on the bill date.",
+      "Within 90 days — file with the repair receipt, account number, address, and the date range of the high-bill charges.",
+      "Credit — 50% of the excess usage, up to two billing cycles.",
+      "Once per 12 months — you are not eligible again until 12 months after the prior credit was applied.",
+    ],
     formLabel: "Austin high-water-bill options page (City Code 15-9-141)",
     rule: ruleForMetro("Austin"),
     townGuidePath: null,
@@ -291,8 +367,28 @@ export const ADJUSTMENT_CITIES: AdjustmentCityPage[] = [
       "Fort Worth Water serves Fort Worth itself. The ten towns in our Fort Worth metro — Arlington, Mansfield, Grand Prairie, North Richland Hills, Keller, Southlake, Grapevine, Bedford, Euless, and Burleson — run their own systems. Burleson buys treated water wholesale from Fort Worth, but its retail provider is the City of Burleson. This rule does not cover them.",
     caveats: [
       "No live fortworthtexas.gov leak-adjustment page was found — re-verify against a live city page before applying.",
+      "Re-checked Nov 16, 2026: a search of fortworthtexas.gov still surfaced no live leak-adjustment page — only a SmartRepair program for minor visible leaks, which is a different program.",
       "The rule rests on a copy of the city's March 2021 application form, corroborated by the City of Denton's official Aug 2025 benchmark.",
       "The adjustment applies to water only, not sewer — a winter leak still inflates the winter quarter average.",
+    ],
+    answerBox:
+      "Fort Worth Water credits 50% of the water use above your six-month average for a repaired residential leak. File the signed application within 60 days of the repair — but re-verify the rule first: it rests on a 2021 form copy.",
+    workedExample: {
+      intro:
+        "Example only — a sample bill run through the real rule. Normal month 8,000 gallons; leak month 35,000 gallons; excess 27,000 gallons. The dollar figures assume an illustrative rate of $5.00 per 1,000 gallons — not Fort Worth Water's actual rate — so the excess water charge is 27 × $5.00 = $135.00. Your bill's rate will differ; the checker above uses your real numbers.",
+      lines: [
+        "Credit at 50% of the difference above your average: 50% × $135.00 = $67.50.",
+        "Covers up to two consecutive billing periods, once per rolling 12 months.",
+        "Water only — not sewer. A December–February leak still inflates the winter quarter average.",
+      ],
+      note: "Rule rests on a copy of the city's March 2021 application form — re-verify on a live city page before you apply (re-checked Nov 16, 2026: no live fortworthtexas.gov leak-adjustment page was found).",
+    },
+    deadlineTimeline: [
+      "Day 0 — repairs completed. The 60-day clock starts now, not on the bill date.",
+      "Within 60 days — send the signed application plus repair receipts to MyWaterAccount@FortWorthTexas.gov.",
+      "Allow up to two billing cycles for the city to confirm usage returned to normal.",
+      "Once per rolling 12 months — one adjustment per year, up to two consecutive billing periods.",
+      "Re-verify first — no live city page was found; this rule rests on a March 2021 form copy (re-checked Nov 16, 2026).",
     ],
     formLabel: "Fort Worth Water Leak Repair Adjustment Application (form copy, Mar 2021)",
     rule: ruleForMetro("Fort Worth"),
@@ -372,6 +468,25 @@ export const ADJUSTMENT_CITIES: AdjustmentCityPage[] = [
       "The adjustment covers the water portion only — not wastewater, stormwater, or environmental services fees.",
       "A December–February leak inflates the Average Winter Consumption, because the adjustment does not touch wastewater.",
     ],
+    answerBox:
+      "El Paso Water credits 50% of the excess water use from a hidden leak, and the ServLine program can cover the two highest bills up to $2,500. File within 60 days of the repair; only one adjustment per 24 months.",
+    workedExample: {
+      intro:
+        "Example only — a sample bill run through the real rule. Normal month 8,000 gallons; leak month 35,000 gallons; excess 27,000 gallons. The dollar figures assume an illustrative rate of $5.00 per 1,000 gallons — not El Paso Water's actual rate — so the excess water charge is 27 × $5.00 = $135.00. Your bill's rate will differ; the checker above uses your real numbers.",
+      lines: [
+        "Threshold check: excess 27,000 gallons is more than 10 CCF (7,480 gallons), so the leak clears El Paso's threshold.",
+        "Credit at 50% of the excess above baseline: 50% × $135.00 = $67.50.",
+        "ServLine alternative: the two highest bills in a three-month span are covered up to $2,500; beyond $2,500 the utility may credit 50% of the remaining balance.",
+      ],
+      note: "Applies to the water portion only — not wastewater, stormwater, or environmental services fees.",
+    },
+    deadlineTimeline: [
+      "Day 0 — the hidden leak is repaired. The 60-day clock starts now, not on the bill date.",
+      "Within 60 days — send the email request with receipts or a statement of repairs.",
+      "The utility verifies consumption dropped back to normal in the month after the repair.",
+      "Credit — 50% of the excess above baseline; typically applied within 5 to 15 business days of approval.",
+      "Once per rolling 24 months — the strictest limit of any Texas utility we verified.",
+    ],
     formLabel: "EPWater leak adjustment page",
     rule: ruleForMetro("El Paso"),
     townGuidePath: "/tx/el-paso/el-paso/",
@@ -448,6 +563,566 @@ export const ADJUSTMENT_CITIES: AdjustmentCityPage[] = [
     formLabel: "City of Amarillo Utility Billing page",
     rule: ruleForMetro("Amarillo"),
     townGuidePath: "/tx/amarillo/amarillo/",
+  },
+  {
+    slug: "houston",
+    city: "Houston",
+    utility: "City of Houston Water (Houston Public Works)",
+    metro: "Houston",
+    title: "Houston Leak Adjustment — Houston Water Rules",
+    description:
+      "Houston leak adjustment: 100/75/50% credit tiers, 6-month deadline, up to 3 months — plus MUD rules, worked example, and checker. Checked Nov 16, 2026.",
+    intro:
+      "A hidden leak in Houston can earn the most generous credit in Texas — 100% of the water charge on the usage above your average, if the leak is repaired within 30 days. The tiers fall fast after that (75% within 60 days, 50% after), and the application must reach the city within 6 months of the repair. This guide gives you the full rule from the city's own form, a worked dollar example, the deadline timeline, and — the part no other guide covers — the MUD rules that apply instead if your home is on MUD water.",
+    deadlineWarning:
+      "Apply within 6 months of the repair date — and repair fast: 100% of the excess water charge is credited if the repair is made within 30 days of the leak start, 75% within 60 days, 50% after 60 days. The tiers count from the leak start date or the leak notification date, not the bill date. File through the city's Universal Adjustment Request form as soon as the repair is done.",
+    checklist: [
+      "Documentation of the repair date, address, type of repair, and cost — a plumber's statement or bill, a receipt for parts, or a signed written statement",
+      "Your Houston water account number and the property address",
+      "The high bill date and the bills showing the spike and the return to normal",
+      "Before-and-after meter photos, if you have them — the repair date is what the tiers turn on",
+      "Note: submit the request only after the leak is repaired — the form says so plainly",
+    ],
+    steps: [
+      {
+        title: "Repair the leak and note the start date",
+        text: "Fix the leak and write down when it started — or when you were notified about it. The 100/75/50% tiers count from the leak start date or the leak notification date, so the start date decides your tier.",
+      },
+      {
+        title: "Gather the repair documentation",
+        text: "Collect the plumber's statement or bill, a receipt for parts, or a signed written statement — any of the three is accepted — showing the repair date, the address, the type of repair, and the cost.",
+      },
+      {
+        title: "Open the Universal Adjustment Request form",
+        text: "Choose the leak-adjustment path on the city's Universal Adjustment Request page and enter the billing account holder name, account number, street number, ZIP code, phone, and email.",
+      },
+      {
+        title: "Upload the repair document and file",
+        text: "Attach the repair document (JPG, GIF, or PNG up to 4MB, or a Word or PDF file) and submit within 6 months of the repair date. Keep a copy of everything you submit, including the confirmation.",
+      },
+      {
+        title: "Keep paying your typical bill during the review",
+        text: "The city's form page states no processing time, so no number is promised here. Keep paying at least your typical bill amount while the request is reviewed, and check that the credit appears on a later bill.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Do toilet or faucet leaks qualify for a Houston leak adjustment?",
+        a: "No. Houston's rule covers loss through an “excusable defect” — rupture or leakage caused by weather, settlement, corrosion, wear, or accident. Visible leaks such as faucet and hose leaks are ineligible, and toilets are not named as qualifying. If your high bill came from a running toilet or dripping faucet, the adjustment will not cover it — fix the fixture, then check the Unusually Large Bill program instead.",
+      },
+      {
+        q: "How much will Houston credit for a leak?",
+        a: "It depends on repair speed: 100% of the water charge on usage above your average if repaired within 30 days of the leak start or notification date, 75% within 60 days, 50% after 60 days. The credit covers water and wastewater for up to three consecutive months within a 12-month period. The worked example below runs a sample bill through all three tiers so you can see the dollars.",
+      },
+      {
+        q: "What is the deadline to apply in Houston?",
+        a: "Within 6 months of the repair date, under Code Sec. 47-74. The clock runs from the repair, not the bill — and the repair-speed tiers make early repair worth real money: repairing within 30 days doubles the credit versus repairing after 60 days. File through the city's Universal Adjustment Request form as soon as the repair is done and the high bill is in hand.",
+      },
+      {
+        q: "How long does a Houston leak adjustment take?",
+        a: "The city's form page does not state a processing time, so we cannot give you a number — that is unverified, not a gap in this guide. File promptly, keep paying your typical bill amount during the review, and keep the repair documentation until the credit appears. If the wait stretches on, call Houston Public Works with your request reference and ask for a status update.",
+      },
+      {
+        q: "Can I get a second Houston leak adjustment?",
+        a: "The leak-adjustment rule allows up to three consecutive months within a 12-month period, but no frequency limit for repeat adjustments is published on the form page — so we do not state one. If your case was not a leak but unexplained high use, two fallback programs exist: the Unusually Large Bill credit (one month, once a year, use over 200% of average) and the Exceptional Circumstance Adjustment (up to two bills in 24 months, capped at $10,000).",
+      },
+      {
+        q: "Does the Houston adjustment cover my sewer bill?",
+        a: "Yes — the leak adjustment under Sec. 47-74 is a water/wastewater credit, so the sewer portion of the leaked usage is credited too. That is better than Dallas, Austin, or Fort Worth, where the adjustment is water-only. And because Houston bills wastewater on monthly metered water with no winter averaging, a leak cannot inflate a future sewer average — there is no 12-month sewer tail to worry about here.",
+      },
+      {
+        q: "What if my home is on MUD water, not City of Houston water?",
+        a: "Then the City of Houston's rules do not apply to you at all — your MUD's board sets its own rule, deadline, and proof list. Check your bill for the district name, then read its policy: Harris County MUD 71 credits excess usage at half rate with a 3-month deadline, and MUD 501 requires Eye On Water registration with a 6-month deadline. The MUD table below and the MUD directory list what is verified for each district.",
+      },
+      {
+        q: "What proof does Houston ask for?",
+        a: "Documentation of the repair date, address, type of repair, and cost. Houston accepts a plumber's statement or bill, a receipt for parts, or a signed written statement — upload it with the Universal Adjustment Request form (JPG, GIF, or PNG up to 4MB, or a Word or PDF document). Keep a copy of everything you submit, including the confirmation, until the credit shows on your bill.",
+      },
+    ],
+    scopeNote:
+      "City of Houston Water serves Houston itself. The ten towns in our Houston metro — Katy, Sugar Land, The Woodlands, Pearland, Cypress, Spring, Pasadena, League City, Conroe, and Humble — run their own city systems or MUDs, so this rule does not cover them. If your bill names a MUD, that district's rule applies, not the city's.",
+    caveats: [
+      "Processing time is not stated on the city's form page — UNVERIFIED. Do not plan around a number no official source gives.",
+      "The 100/75/50% tiers count from the leak start date or the leak notification date — not from the bill date or the repair date.",
+      "No frequency limit for repeat leak adjustments is published on the form page — the rule states up to three consecutive months within a 12-month period.",
+      "The Unusually Large Bill and Exceptional Circumstance programs on the same form have their own limits (one month per year; up to two bills in 24 months capped at $10,000).",
+    ],
+    formLabel: "Houston Universal Adjustment Request (official form)",
+    rule: ruleForMetro("Houston"),
+    townGuidePath: null,
+    answerBox:
+      "Houston Public Works credits up to 100% of the water charge on usage above your average when a leak is repaired within 30 days — 75% within 60 days, 50% after. You must apply within 6 months of the repair date.",
+    workedExample: {
+      intro:
+        "Example only — a sample bill run through the real rule. Normal month 8,000 gallons; leak month 35,000 gallons; excess 27,000 gallons. The dollar figures assume an illustrative rate of $5.00 per 1,000 gallons — not Houston's actual rate, which changes — so the excess water charge is 27 × $5.00 = $135.00. Your bill's rate will differ; the checker above uses your real numbers.",
+      lines: [
+        "Repaired within 30 days of the leak start: 100% tier — $135.00 credited on the water charge.",
+        "Repaired within 60 days: 75% tier — $101.25 credited.",
+        "Repaired after 60 days: 50% tier — $67.50 credited.",
+        "The credit covers water and wastewater under Sec. 47-74, for up to three consecutive months within a 12-month period — the wastewater portion is not computed here because it depends on your sewer rate.",
+      ],
+      note: "Repair speed is worth real money here: repairing within 30 days instead of after 60 days doubles the credit on the same leak.",
+    },
+    deadlineTimeline: [
+      "Day 0 — the leak starts (or you are notified). The repair-speed clock starts now.",
+      "Repair within 30 days — 100% of the water charge on usage above average.",
+      "Repair within 60 days — 75%. Repair after 60 days — 50%.",
+      "Within 6 months of the repair date — file the Universal Adjustment Request.",
+      "Up to three consecutive months within a 12-month period; water and wastewater both credited.",
+      "Processing time — not stated on the city's form page (UNVERIFIED).",
+    ],
+    mudTable: [
+      {
+        name: "Harris County MUD 71",
+        area: "Cypress / Katy area — about 17,000 people (Mason Lakes, Bridgewater, Cypress Glen)",
+        terms:
+          "Excess usage above the customer's average charged at one-half of the normal rate. Apply within 3 months of the repair date; max 2 credits per 12 months; max 2 consecutive billing cycles. Eye On Water account with the smart meter registered is required, and the applicant needs at least 12 billing cycles of usage history. West Harris County Regional Water Authority fees and the flat-rate sewer portion are not adjustable.",
+        statusLabel: "Verified — amended resolution, Aug 28, 2023",
+        sourceUrl:
+          "https://mail.regionalwater.net/images/documents/HC%2071%20Leak%20Adjustment%20Amended%20Resolution%20Adopting%20Policy%20and%20Procedures_8.28.23.pdf",
+        sourceLabel: "MUD 71 amended resolution (Aug 28, 2023)",
+      },
+      {
+        name: "Harris County MUD 501",
+        area: "Towne Lake community, Cypress area",
+        terms:
+          "Apply within 6 months of the repair date (verified — MUD 501 policy update page). Eye On Water account with the smart meter registered is REQUIRED for a credit. What qualifies is verified: loss from an “excusable defect”, generally a non-obvious leak such as an underground irrigation line leak. Credit percentage, maximum months, and frequency limit are NOT verified — the updated policy PDF would not render.",
+        statusLabel: "Partial — deadline + Eye On Water verified; credit % unverified",
+        sourceUrl: "https://www.hcmud501.org/water/update-to-mud-501-policy-for-leak-adjustment-credits/",
+        sourceLabel: "MUD 501 policy update page",
+      },
+      {
+        name: "Harris County MUD 365",
+        area: "Houston area — district boundaries not verified",
+        terms:
+          "UNVERIFIED — the Nov 16, 2026 build plan lists terms for MUD 365 (max 3 months; request within 6 months; max 2 credits per 12 months; half-rate credit), but no verified rule for this district exists in our research file (lib/utility-rules.ts). Do not rely on those figures — confirm with the district or its operator first.",
+        statusLabel: "Not verified — confirm with the district",
+        sourceUrl: null,
+        sourceLabel: null,
+      },
+    ],
+    documentPack: [
+      "Filled letter draft — use the Leak-Adjustment Eligibility Checker above: enter your bills and repair facts and it drafts the letter with your numbers, the deadline, and the credit estimate.",
+      "Photo and receipt checklist — repair date, service address, type of repair, cost; plumber's statement or bill, or a receipt for parts, or a signed written statement; before-and-after meter photos.",
+      "Official form — City of Houston Universal Adjustment Request (linked in the rule table above). Uploads: JPG, GIF, or PNG up to 4MB, or Word/PDF documents.",
+      "Keep paying your typical bill amount while the request is reviewed, and keep a copy of everything you submit until the credit appears.",
+    ],
+    weekChecklist: [
+      "Repair the leak — the 30-day tier is worth double the 60-day-plus tier.",
+      "Photograph the meter before and after the repair, and keep the plumber's statement or parts receipt.",
+      "Pull the normal-month and leak-month bills (gallons and dollars).",
+      "Run the checker above for your eligibility verdict and letter draft.",
+      "File the Universal Adjustment Request within 6 months of the repair — sooner is better.",
+      "If your bill names a MUD, stop — use the MUD table below instead of the city form.",
+    ],
+    localContext: [
+      "Houston's Gulf Coast climate makes irrigation the usual suspect after storms: a sprinkler main that breaks in saturated soil can run for weeks before the bill arrives, and the city's own form treats that kind of hidden loss as the program's core case — while visible faucet and hose leaks are excluded. Compare gallons per day, not just the bill total, because missed reads can stretch a billing period.",
+      "Older bungalows and pier-and-beam homes across Houston's inner neighbourhoods are prone to slab and under-floor leaks that never surface — the water disappears into the soil instead of pooling where you can see it. That is also why the meter test matters: a spinning meter with everything off is often the only sign.",
+      "Hurricane and flood disruption can delay reads and repairs alike, but the repair-speed tiers still count from the leak start date — so document the start date early, with a photo of the meter and the date you first noticed the spike.",
+      "Two fallback programs sit on the same city form: the Unusually Large Bill credit (Sec. 47-75 — one month, once a year, for unexplained use over 200% of average) and the Exceptional Circumstance Adjustment (Sec. 47-75.1 — up to two bills in 24 months, capped at $10,000). If your case is not a leak, one of those may fit.",
+    ],
+    relatedTowns: [
+      { label: "Leak detection in Katy, TX", path: "/tx/houston/katy/" },
+      { label: "Leak detection in Cypress, TX", path: "/tx/houston/cypress/" },
+      { label: "Leak detection in Sugar Land, TX", path: "/tx/houston/sugar-land/" },
+      { label: "Leak detection in The Woodlands, TX", path: "/tx/houston/the-woodlands/" },
+    ],
+  },
+  {
+    slug: "dallas",
+    city: "Dallas",
+    utility: "City of Dallas Water Utilities",
+    metro: "Dallas",
+    title: "Dallas Leak Adjustment — Dallas Water Rules",
+    description:
+      "Dallas leak adjustment: excess usage repriced at the lowest rate, max 3 months, once a year. Deadline unverified — see the form. Checked Nov 16, 2026.",
+    intro:
+      "Dallas Water Utilities does not credit a percentage of your leak — it reprices the water used above your average at the lowest rate on the scale, for up to three months, once a year. The catch is the filing deadline: the city's current page does not state one, and the 90-day figure comes from the request form alone. This guide gives you the full rule from the official page, a worked dollar example, the deadline timeline, and the winter-averaging warning the adjustment will not fix.",
+    deadlineWarning:
+      "The filing deadline is UNVERIFIED on the city's current page. The Leak Adjustment Request form (DWU-FRM-004-RB, rev. 4, eff. Feb 1, 2019) states 90 days from the completed repair — treat that as the working deadline, confirm it on the form, and file as soon as the repair is done. Processing takes up to 60 days once filed.",
+    checklist: [
+      "The date the repairs were completed",
+      "A detailed description of the repairs",
+      "The address where the repairs were made and the account number",
+      "The meter number, for multi-metered accounts",
+      "The plumber's invoice or receipt — the form asks for the repair facts, and the invoice is what proves them",
+    ],
+    steps: [
+      {
+        title: "Repair the hidden leak and get the invoice",
+        text: "Fix the leak and get an invoice that describes the repair and gives the completion date. The program covers a hidden or concealed leak that caused a substantial increase in use — not a visible drip, and not a sewer leak.",
+      },
+      {
+        title: "Confirm the filing deadline on the form",
+        text: "The city's current web page does not state a filing deadline. The Leak Adjustment Request form (DWU-FRM-004-RB, rev. 4, eff. Feb 1, 2019) states 90 days from the completed repair — read the form yourself and treat 90 days as the working deadline.",
+      },
+      {
+        title: "Fill in the Leak Adjustment Request form",
+        text: "Enter the repair completion date, a detailed description of the repairs, the address, the account number, and the meter number for multi-metered accounts. Attach the invoice or receipt.",
+      },
+      {
+        title: "Submit it online, by mail, fax, email, or in person",
+        text: "Requests using the form may be submitted online, mailed, faxed, emailed, or dropped off at Dallas City Hall. Keep a copy of what you sent and the confirmation.",
+      },
+      {
+        title: "Keep paying during the review",
+        text: "A temporary hold is placed on the account during the review so no late charges are assessed — but keep making monthly payments equal to or higher than your typical bill amount, as the city asks, so service is not disrupted. Processing takes up to 60 days.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Do toilet or faucet leaks qualify in Dallas?",
+        a: "Dallas covers a hidden or concealed water leak that causes a substantial increase in consumption — not a visible drip. A running toilet or dripping faucet is the kind of visible leak the program is not built for, and wastewater or sewer leaks are explicitly excluded. If your spike came from a fixture you could see, fix it and ask Dallas Water Utilities whether any other billing review applies — the leak program almost certainly will not.",
+      },
+      {
+        q: "How much will Dallas credit for a leak?",
+        a: "There is no percentage credit. Dallas recalculates the cost per unit of water above your average at the lowest rate on the rate scale — you still pay for all the water used, just at the cheapest tier for the excess. The worked example below shows the arithmetic with clearly labelled illustrative rates, because Dallas does not publish its rate scale on the adjustment page. The real figure comes from Dallas Water Utilities.",
+      },
+      {
+        q: "What is the filing deadline for a Dallas leak adjustment?",
+        a: "It is unverified. The city's Leak Adjustment Request form (DWU-FRM-004-RB, rev. 4, effective Feb 1, 2019) states 90 days from the completed repair — but the current dallascityhall.com page does not restate any deadline. Treat the 90 days as the working deadline, confirm it on the form itself, and file as soon as the repair is done rather than testing the limit.",
+      },
+      {
+        q: "How long does a Dallas leak adjustment take?",
+        a: "Up to 60 days, according to the city's official page (checked Nov 16, 2026). The city reviews usage once the last affected billing cycle has been recorded, and puts a temporary hold on the account during the review so no late charges are assessed. Keep paying at least your typical bill amount during the review so service is not disrupted.",
+      },
+      {
+        q: "How often can I get a Dallas leak adjustment?",
+        a: "Once per 12-month period, for a maximum of three months. That limit is stated on the city's official page, so it is firm: if a second leak hits inside the same year, there is no second credit under this program. Claim every month the leak touched — up to three — in a single request rather than filing for one month and hoping for another.",
+      },
+      {
+        q: "Does the Dallas adjustment cover my sewer bill?",
+        a: "No. The program explicitly does not cover or apply to wastewater or sewer leaks, and Dallas sets sewer charges from your December–March winter average. A leak in those months inflates the average and the sewer charges that follow for a year. Run the Sewer Winter-Averaging Calculator linked below to see the size of that tail before you file.",
+      },
+      {
+        q: "What if my Dallas suburb is not served by Dallas Water?",
+        a: "Then this rule does not apply to you. Plano, Frisco, Irving, Garland, McKinney, Allen, Richardson, Carrollton, Lewisville, and Denton all run their own water systems, and many Dallas-area subdivisions are on MUDs. Check the utility name on your bill first — if it is not Dallas Water Utilities, ask that provider for its own leak-adjustment rule.",
+      },
+    ],
+    scopeNote:
+      "Dallas Water Utilities serves Dallas itself. The ten towns in our Dallas metro — Plano, Frisco, Irving, Garland, McKinney, Allen, Richardson, Carrollton, Lewisville, and Denton — run their own systems. This rule does not cover them.",
+    caveats: [
+      "The filing deadline is UNVERIFIED on the current official page — the 90-day figure comes from the city's form DWU-FRM-004-RB (rev. 4, eff. Feb 1, 2019). Confirm it on the form before you count on it.",
+      "Processing takes up to 60 days per the official page (checked Nov 16, 2026). An earlier summary quoted 60–90 days; the official page is the authority.",
+      "The adjustment does not cover wastewater or sewer leaks, and does not correct an inflated winter sewer average.",
+      "A temporary hold is placed on the account during review — keep paying at least your typical bill amount.",
+    ],
+    formLabel: "Dallas leak adjustment page (official form)",
+    rule: ruleForMetro("Dallas"),
+    townGuidePath: null,
+    answerBox:
+      "Dallas Water Utilities reprices water used above your average at the lowest rate on the scale, for up to 3 months, once a year. The filing deadline is not stated on the city's current page — confirm it on the form.",
+    workedExample: {
+      intro:
+        "Example only — a sample bill run through the real rule. Normal month 8,000 gallons; leak month 35,000 gallons; excess 27,000 gallons. Dallas publishes the mechanism, not the rates: the excess is repriced at the lowest rate on the scale. The dollars below assume an illustrative normal rate of $5.00 and an illustrative lowest-tier rate of $3.00 per 1,000 gallons — not Dallas's published rates. Your real figure comes from Dallas Water Utilities.",
+      lines: [
+        "Excess water charge at the illustrative normal rate: 27 × $5.00 = $135.00.",
+        "Excess repriced at the illustrative lowest tier: 27 × $3.00 = $81.00.",
+        "Illustrative saving from the repricing: $135.00 − $81.00 = $54.00 — you still pay for all the water used, at the cheapest tier for the excess.",
+        "Covers up to 3 months, once per 12 months; wastewater is not covered.",
+      ],
+      note: "Without Dallas's rate scale no exact dollar figure is possible from the published rule — ask Dallas Water Utilities for the repriced figure on your account.",
+    },
+    deadlineTimeline: [
+      "Day 0 — the leak is repaired. Confirm the filing deadline on the official form — see below.",
+      "Filing deadline — UNVERIFIED on the current city page. The city's form (DWU-FRM-004-RB, rev. 4, eff. Feb 1, 2019) states 90 days from the completed repair; the current dallascityhall.com page does not restate a deadline.",
+      "Once per 12 months, maximum three months — stated on the official page.",
+      "Processing — up to 60 days, per the official page (checked Nov 16, 2026). The city reviews usage once the last affected billing cycle is recorded.",
+      "During review — a temporary hold is placed on the account; keep paying at least your typical bill amount.",
+    ],
+    documentPack: [
+      "Filled letter draft — use the Leak-Adjustment Eligibility Checker above: enter your bills and repair facts and it drafts the letter with your numbers, the deadline, and the credit estimate.",
+      "Photo and receipt checklist — repair completion date, detailed description of the repairs, address, account number, meter number for multi-metered accounts; plumber's invoice or receipt; before-and-after meter photos.",
+      "Official form — Dallas Leak Adjustment Request form (linked in the rule table above). Submit online, by mail, fax, email, or drop-off at Dallas City Hall.",
+      "Keep paying at least your typical bill amount during the review — the city asks for this on its official page — and keep a copy of everything you submit until the credit appears.",
+    ],
+    weekChecklist: [
+      "Repair the hidden leak and get an invoice describing the repair.",
+      "Photograph the meter before and after; note the repair date.",
+      "Pull the normal and leak-month bills and your account (and meter) number.",
+      "Run the checker above for your verdict and letter draft.",
+      "File the Leak Adjustment Request form — and confirm the 90-day deadline on the form itself.",
+      "Keep paying at least your typical bill amount during the review.",
+    ],
+    localContext: [
+      "Dallas Water Utilities bills on tiered rates across 21 billing areas, so the same leak costs a different amount depending on where you live and which tier the excess falls in — that is exactly why the adjustment reprices the excess at the lowest rate instead of crediting a percentage.",
+      "Dallas Water Utilities' June 2026 water-loss audit reported 10.36 billion gallons of real water losses — the city's own system loses water too. A high bill is worth checking against your meter before assuming the leak is yours.",
+      "Dallas sets sewer charges from the December–March winter average, so a leak in those four months does double damage: the high water bill now, and inflated sewer charges for the following year. The adjustment does not touch wastewater, so run the winter-averaging calculator below before you file.",
+      "Dallas serves the city itself. Plano, Frisco, Irving, Garland, McKinney, Allen, Richardson, Carrollton, Lewisville, and Denton each run their own water systems — if your bill names one of those, this rule does not cover you.",
+    ],
+    relatedTowns: [
+      { label: "Leak detection in Plano, TX", path: "/tx/dallas/plano/" },
+      { label: "Leak detection in Frisco, TX", path: "/tx/dallas/frisco/" },
+      { label: "Leak detection in Irving, TX", path: "/tx/dallas/irving/" },
+      { label: "Leak detection in McKinney, TX", path: "/tx/dallas/mckinney/" },
+    ],
+  },
+  {
+    slug: "mcallen",
+    city: "McAllen",
+    utility: "McAllen Public Utility (MPU)",
+    metro: "McAllen",
+    title: "McAllen Leak Adjustment — No Policy Found",
+    description:
+      "No written leak-adjustment policy was found for McAllen Public Utility (Nov 16, 2026). What to ask, what proof to keep, and the meter recheck.",
+    intro:
+      "No written leak-adjustment policy was found for McAllen Public Utility as of Nov 16, 2026 — no percentage, no deadline, no form, and no eligibility rule. That is the honest starting point, and it is also the opportunity: this guide tells you exactly what was checked, what MPU does publish instead (a meter recheck read), the four questions to ask the utility, and the proof file to keep so a case-by-case review has something to work with.",
+    deadlineWarning:
+      "No deadline is published — because no policy exists. Do not treat that as unlimited time: ask McAllen Public Utility for the deadline in writing as soon as the repair is complete, and keep the answer with the date and the name of the person you spoke to.",
+    checklist: [
+      "The plumber's invoice with the repair date, type of repair, address, and cost",
+      "Photos of the leak and the repair, if you have them",
+      "Meter photos before and after the repair",
+      "The normal-month and leak-month bills showing the spike in gallons and dollars",
+      "Your MPU account number and the property address, exactly as printed on your bill",
+    ],
+    steps: [
+      {
+        title: "Repair the leak and keep the invoice",
+        text: "Fix the leak first and keep the plumber's invoice with the repair date, the type of repair, the address, and the cost. Even with no published policy, the invoice is the document any case-by-case review will ask for.",
+      },
+      {
+        title: "Ask MPU the four questions",
+        text: "Use the ask-the-utility script below — do you offer a leak adjustment, what is the deadline, what proof do you need, and does any credit apply to sewer? Ask in writing if you can, and write down the answer with the date and the name of the person you spoke to.",
+      },
+      {
+        title: "Request a recheck read if no leak is found",
+        text: "MPU's published step for a high bill is to check for leaks first and, if no leak is found, request a recheck read of the meter. A re-read is a meter check, not a credit — but it is the route MPU itself publishes, so use it when the cause of the spike is unclear.",
+      },
+      {
+        title: "Keep the written answer",
+        text: "If MPU offers a credit, ask for the deadline and the proof list in writing too. If it does not, the written answer is still useful: it tells you the only route is the meter recheck and the repair itself.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Does McAllen Public Utility offer a leak adjustment?",
+        a: "No written policy was found as of Nov 16, 2026 — no percentage, deadline, form, or eligibility rule appears on McAllen Public Utility's site or in the city code provisions checked. What MPU does publish is a first step: check for leaks, and if none is found, request a recheck read of the meter. A re-read is not a credit, so ask MPU directly whether a repaired leak can earn one.",
+      },
+      {
+        q: "What should I ask McAllen Public Utility?",
+        a: "Four questions, in writing: do you offer a leak adjustment for a repaired hidden leak; what is the filing deadline from the repair date; what proof do you need; and does any credit apply to the sewer portion? Write down the answer with the date and the name of the person you spoke to. A written answer is the closest thing to a policy when no published rule exists.",
+      },
+      {
+        q: "Is there a McAllen leak-adjustment form?",
+        a: "None was found. McAllen Public Utility's Service Application (revised September 19, 2025) references Chapter 106 of the McAllen Code of Ordinances for charges but contains no leak-adjustment terms. Do not use a form you find through a general search unless it is linked from an official McAllen page — one widely indexed ordinance text about leak credits belongs to Cleburne, Texas, not McAllen.",
+      },
+      {
+        q: "What proof should I keep for a McAllen leak?",
+        a: "The plumber's invoice with the repair date, type of repair, address, and cost; photos of the leak and the repair; meter photos before and after the repair; and the normal and leak-month bills showing the spike. Keep all of it even though no policy asks for it yet — if MPU reviews credits case by case, this file is your whole argument.",
+      },
+      {
+        q: "Will a McAllen leak raise my sewer bill for a year?",
+        a: "No — McAllen does not use winter averaging. Residential sewer is billed on 100% of monthly water volume, so a high-water month raises that month's sewer charge only, with no 12-month tail. That is one piece of good news: the damage from a McAllen leak is confined to the months the water actually ran.",
+      },
+      {
+        q: "Who do I call at McAllen Public Utility?",
+        a: "McAllen Public Utility customer service at 956-681-1600. Ask for the leak-adjustment question in writing if you can — email creates a record — and keep the reply. If the answer is that no credit exists, that written answer is still useful: it tells you the only route is the meter recheck and the repair itself.",
+      },
+    ],
+    scopeNote:
+      "McAllen Public Utility serves McAllen itself. The other McAllen-metro towns — Edinburg, Mission, Pharr, Weslaco, Donna, Alamo, San Juan, Mercedes, and Hidalgo — run their own systems. This page covers McAllen addresses on MPU only.",
+    caveats: [
+      "No written policy, form, deadline, or formula was found — this page states what was checked, not a rule.",
+      "A widely indexed ordinance text about leak credits (40% of the increased billing, three-year average, one adjustment per 12 months) belongs to Cleburne, Texas (Sec. 51.023) — not McAllen. Do not use it for McAllen.",
+      "A different McAllen customer-service number (956-681-1003) quoted by a third-party guide is UNVERIFIED as the official number; the number in this guide (956-681-1600) is the one in our research file.",
+    ],
+    formLabel: "No official form published",
+    rule: ruleForMetroOrNull("McAllen"),
+    townGuidePath: null,
+    noPolicy: true,
+    phone: "956-681-1600",
+    askScript: [
+      "“Do you offer a leak adjustment for a repaired hidden leak — and if so, under what rule?”",
+      "“What is the filing deadline from the repair date?”",
+      "“What proof do you need — invoice, photos, meter reads?”",
+      "“Does any credit apply to the sewer portion of the bill?”",
+      "Write down the answer with the date and the name of the person you spoke to — and ask for it in writing if you can.",
+    ],
+    sourcesChecked: [
+      "McAllen Public Utility — Meter Reading page (smart meters “have the ability to detect leaks”; no adjustment policy stated).",
+      "McAllen Public Utility — Service Application PDF, rev. 9-19-2025 (references Chapter 106 of the McAllen Code of Ordinances for charges; no leak-adjustment terms).",
+      "mcallen.net — Stage 2 water-restrictions notice (“fix all water leaks”; no adjustment policy) and backflow presentation (no adjustment policy).",
+      "General web search for a McAllen leak-adjustment policy, form, deadline, or formula — none found.",
+    ],
+  },
+  {
+    slug: "corpus-christi",
+    city: "Corpus Christi",
+    utility: "Corpus Christi Water",
+    metro: "Corpus Christi",
+    title: "Corpus Christi Leak Adjustment — No Water Policy",
+    description:
+      "No water-side leak-adjustment policy was found for Corpus Christi (Nov 16, 2026). The winter-quarter wastewater relief, ask script, and proof list.",
+    intro:
+      "No published water-side leak-adjustment policy was found for Corpus Christi Water as of Nov 16, 2026 — no percentage, deadline, form, or eligibility rule for the water portion of the bill. One verified relief does exist, on the sewer side: a hidden leak in the December–February winter quarter can earn a wastewater-bill adjustment under Code Sec. 55-100(e)(4). This guide covers that relief, what was checked, and the four questions to ask the city.",
+    deadlineWarning:
+      "No water-side deadline is published — because no water-side policy exists. For the verified wastewater relief, the adjusted sewer rate applies to service on or after May 1, so ask Utility Billing early in the year how a December–February leak is handled. Ask for every deadline in writing.",
+    checklist: [
+      "The plumber's invoice with the repair date, type of repair, address, and cost",
+      "Photos of the leak and the repair, if you have them",
+      "Meter photos before and after the repair",
+      "The normal-month and leak-month bills showing the spike in gallons and dollars",
+      "For the winter-quarter wastewater relief, the proof of repairs is what the code asks for — keep the invoice even if the repair was small",
+    ],
+    steps: [
+      {
+        title: "Repair the leak and keep the invoice",
+        text: "Fix the leak first and keep the plumber's invoice with the repair date, the type of repair, the address, and the cost. The invoice is the proof the winter-quarter wastewater relief asks for, and the document any water-side review would need too.",
+      },
+      {
+        title: "Ask Utility Billing the four questions",
+        text: "Use the ask-the-utility script below — do you adjust the water portion, what is the deadline, what proof do you need, and for a December–February leak, will the wastewater average be corrected under Sec. 55-100(e)(4)? Ask in writing if you can.",
+      },
+      {
+        title: "For a December–February leak, cite the wastewater relief",
+        text: "Under Code Sec. 55-100(e)(4), if a hidden water leak caused a substantial increase during the winter quarter averaging period, the director of water utilities or designee may adjust the wastewater bill with proof of repairs. The adjusted sewer rate applies to service on or after May 1.",
+      },
+      {
+        title: "Keep the written answer",
+        text: "Write down every answer with the date and the name of the person you spoke to. If the water portion cannot be adjusted, the written answer should still confirm whether the Sec. 55-100(e)(4) wastewater relief applies to your leak.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Does Corpus Christi Water offer a leak adjustment?",
+        a: "No published water-side policy was found as of Nov 16, 2026 — no percentage, deadline, form, or eligibility rule for the water portion of the bill. That is a verified absence, not a gap in this guide: the city site, utility guides, and local plumber pages were all checked. What does exist is a verified wastewater-side relief for hidden leaks in the winter quarter — see the next question.",
+      },
+      {
+        q: "What is the Corpus Christi winter-quarter wastewater relief?",
+        a: "Under Code Sec. 55-100(e)(4), if a hidden water leak causes a substantial increase during the December–February winter quarter, the director of water utilities may adjust the wastewater bill with proof of repairs. The adjusted sewer rate applies to service on or after May 1. This corrects the sewer average — it is not a credit on the water used by the leak itself.",
+      },
+      {
+        q: "Is there a Corpus Christi leak-adjustment form online?",
+        a: "An online Leak Adjustment Request Form exists, but its owner city is unverified — it carries no city name or branding — so we do not link it as Corpus Christi's form or quote its terms here. Do not submit personal account details to a form you cannot trace to an official city page. Use the phone number below and ask Utility Billing where the city's own form lives.",
+      },
+      {
+        q: "What should I ask Corpus Christi Water?",
+        a: "Four questions, in writing: do you adjust the water portion of a bill after a repaired hidden leak; what is the filing deadline; what proof do you need; and for a December–February leak, will the wastewater average be corrected under Sec. 55-100(e)(4)? Write down the answer with the date and the name of the person you spoke to.",
+      },
+      {
+        q: "What proof should I keep for a Corpus Christi leak?",
+        a: "The plumber's invoice with the repair date, type of repair, address, and cost; photos of the leak and the repair; meter photos before and after; and the normal and leak-month bills. For the winter-quarter wastewater relief, the proof of repairs is what the code asks for — keep the invoice even if the repair was small.",
+      },
+      {
+        q: "Who do I call about a Corpus Christi leak adjustment?",
+        a: "Corpus Christi Water customer service at (361) 826-3100, or 311. Ask in writing where possible and keep the reply. If the water portion cannot be adjusted, ask specifically about the Sec. 55-100(e)(4) wastewater relief for a winter-quarter hidden leak — it is the one verified mechanism the city publishes for a leak like yours.",
+      },
+    ],
+    scopeNote:
+      "Corpus Christi Water serves Corpus Christi itself. The San Patricio Municipal Water District is a wholesale provider only — it buys its water from the City of Corpus Christi and serves retail systems in Portland, Aransas Pass, Ingleside, and Rockport, plus industry. Homeowners do not apply to the wholesale district.",
+    caveats: [
+      "No published water-side leak-adjustment policy, form, deadline, or formula was found — this page states what was checked, not a rule.",
+      "An online Leak Adjustment Request Form exists, but its owner city is UNVERIFIED (no city name or branding) — it is not linked here as Corpus Christi's form.",
+      "The verified wastewater relief (Code Sec. 55-100(e)(4)) corrects the sewer average for a winter-quarter hidden leak — it is not a credit on the water used by the leak.",
+    ],
+    formLabel: "No official water-side form published",
+    rule: ruleForMetroOrNull("Corpus Christi"),
+    townGuidePath: null,
+    noPolicy: true,
+    phone: "(361) 826-3100",
+    askScript: [
+      "“Do you adjust the water portion of a bill after a repaired hidden leak — and if so, under what rule?”",
+      "“What is the filing deadline from the repair date?”",
+      "“What proof do you need — invoice, photos, meter reads?”",
+      "“For a December–February leak, will the wastewater average be corrected under Code Sec. 55-100(e)(4)?”",
+      "Write down the answer with the date and the name of the person you spoke to — and ask for it in writing if you can.",
+    ],
+    sourcesChecked: [
+      "cctexas.com site search — returned only Development Services documents (zoning, easements, floodplain permits); no utilities leak-adjustment page.",
+      "Utility-bill guides for Corpus Christi — no policy, only “ask about adjustment rules” advice.",
+      "Local plumber leak-detection pages — “ask the utility about current leak adjustment policies once the leak is repaired” (the plumber could not find one either).",
+      "Corpus Christi Code Sec. 55-100(e)(4) — verified wastewater relief for a hidden leak in the winter quarter (see the winter section below).",
+    ],
+  },
+  {
+    slug: "lubbock",
+    city: "Lubbock",
+    utility: "City of Lubbock Water Utilities",
+    metro: "Lubbock",
+    title: "Lubbock Leak Adjustment — No Written Policy",
+    description:
+      "No written leak-adjustment policy was found for Lubbock (Nov 16, 2026). What to ask the city, what proof to keep, and the winter-average warning.",
+    intro:
+      "No written leak-adjustment policy was found for the City of Lubbock as of Nov 16, 2026 — confirmed twice, by our check and by WaterShortcut's November 6 check. The city code covers billing errors only, not leak credits. That does not rule out a credit: some utilities review leak requests case by case. This guide tells you what was checked, the four questions to ask, and the proof file to keep.",
+    deadlineWarning:
+      "No deadline is published — because no policy exists. Do not treat that as unlimited time: ask the City of Lubbock for the deadline in writing as soon as the repair is complete. If a winter leak inflated your November–February sewer average, ask about that too — no policy exists to correct it.",
+    checklist: [
+      "The plumber's invoice with the repair date, type of repair, address, and cost",
+      "Photos of the leak and the repair, if you have them",
+      "Meter photos before and after the repair",
+      "The normal-month and leak-month bills showing the spike in gallons and dollars",
+      "Your Lubbock utilities account number and the property address, exactly as printed on your bill",
+    ],
+    steps: [
+      {
+        title: "Repair the leak and keep the invoice",
+        text: "Fix the leak first and keep the plumber's invoice with the repair date, the type of repair, the address, and the cost. Even with no published policy, the invoice is the document any case-by-case review will ask for.",
+      },
+      {
+        title: "Ask the city the four questions",
+        text: "Use the ask-the-utility script below — do you review leak credits case by case, what is the filing deadline, what proof do you need, and does any credit correct the winter sewer average? Ask in writing if you can, and write down the answer with the date and the name of the person you spoke to.",
+      },
+      {
+        title: "Ask whether a meter test or billing review applies",
+        text: "The Water Conservation Plan mentions meter testing for customers “involved in the water credit or appeals process” — so ask whether a meter test or a billing review applies to your account, even if no leak credit exists.",
+      },
+      {
+        title: "Keep the written answer",
+        text: "If the city offers a case-by-case credit, ask for the deadline and the proof list in writing too. If it does not, the written answer is still useful: it tells you the only routes are the meter test, the billing review, and the repair itself.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Does the City of Lubbock offer a leak adjustment?",
+        a: "No written policy was found as of Nov 16, 2026 — confirmed twice, by our November 16 check and by WaterShortcut's November 6 check. The Lubbock Code of Ordinances covers billing-error adjustments only, not leak credits. That does not rule out a credit: some utilities review leak requests case by case, so ask the city directly once the leak is fixed.",
+      },
+      {
+        q: "What should I ask the City of Lubbock?",
+        a: "Four questions, in writing: do you review leak credits case by case; what is the filing deadline from the repair date; what proof do you need; and does any credit correct the winter sewer average? Write down the answer with the date and the name of the person you spoke to. A written answer is the closest thing to a policy when no published rule exists.",
+      },
+      {
+        q: "Does Lubbock's code cover leak credits at all?",
+        a: "No. Article 22.01 of the Lubbock Code of Ordinances covers billing errors — charges that differ from the approved rates — for up to six months back. A leak is not a billing error: the meter read correctly, the water really ran. The Water Conservation Plan mentions meter testing for customers “involved in the water credit or appeals process,” but publishes no leak-credit terms.",
+      },
+      {
+        q: "What proof should I keep for a Lubbock leak?",
+        a: "The plumber's invoice with the repair date, type of repair, address, and cost; photos of the leak and the repair; meter photos before and after the repair; and the normal and leak-month bills showing the spike. Keep all of it even though no policy asks for it yet — if the city reviews your request case by case, this file is your whole argument.",
+      },
+      {
+        q: "Will a Lubbock leak raise my sewer bill for a year?",
+        a: "Possibly. Lubbock sets wastewater volume from the November–February average, updated each March, and no leak-adjustment policy exists to correct an inflated average. A leak in those months can raise sewer charges for the following year. Run the Sewer Winter-Averaging Calculator linked below to see the size of that tail before you call the city.",
+      },
+      {
+        q: "Who do I call about a Lubbock leak adjustment?",
+        a: "City of Lubbock Utilities at 806-775-2509. Ask in writing where possible and keep the reply, with a note of the date and the name of the person you spoke to. If no credit is available, ask whether a meter test or a billing review applies to your account — the Water Conservation Plan mentions meter testing for customers in the credit or appeals process.",
+      },
+    ],
+    scopeNote:
+      "City of Lubbock Water Utilities serves Lubbock itself. The other Lubbock-metro towns — Wolfforth, Shallowater, Slaton, Idalou, Levelland, Littlefield, Plainview, Abernathy, and Ralls — run their own systems. This page covers Lubbock addresses only.",
+    caveats: [
+      "No written leak-adjustment policy was found — confirmed twice (WaterShortcut, Nov 6, 2026; this site, Nov 16, 2026).",
+      "The Lubbock Code covers billing-error adjustments only (Art. 22.01, up to 6 months back) — a leak is not a billing error.",
+      "No leak-adjustment policy exists to correct an inflated November–February sewer average — a winter leak can raise sewer charges for the following year.",
+    ],
+    formLabel: "No official form published",
+    rule: ruleForMetroOrNull("Lubbock"),
+    townGuidePath: null,
+    noPolicy: true,
+    phone: "806-775-2509",
+    askScript: [
+      "“Do you review leak credits case by case — and if so, under what process?”",
+      "“What is the filing deadline from the repair date?”",
+      "“What proof do you need — invoice, photos, meter reads?”",
+      "“Does any credit correct the winter sewer average if the leak fell in November–February?”",
+      "Write down the answer with the date and the name of the person you spoke to — and ask for it in writing if you can.",
+    ],
+    sourcesChecked: [
+      "City of Lubbock Water Utilities site (via WaterShortcut's Nov 6, 2026 check: “we didn't find a written leak adjustment policy”) — re-checked Nov 16, 2026, same result.",
+      "Lubbock Code of Ordinances, Article 22.01 — covers billing-error adjustments only (over/under billing vs approved rates, up to 6 months back), not leak credits.",
+      "Lubbock Water Conservation Plan, Division 2 — mentions meter testing for customers “involved in the water credit or appeals process” but publishes no leak-credit terms.",
+      "Utility-bill guides for Lubbock — no policy, only “ask about adjustment” advice.",
+    ],
   },
 ];
 
@@ -536,10 +1211,10 @@ export const METRO_ADJUSTMENT_ROWS: MetroAdjustmentRow[] = [
   {
     metro: "Houston",
     utility: "City of Houston Water (Houston Public Works)",
-    status: "competitor",
-    statusLabel: "Covered by WaterShortcut",
-    note: "Verified rule exists (100/75/50% tiered credit, 6-month deadline, up to 3 months) but no guide in this wave — WaterShortcut owns Houston. Apply on the city's official page.",
-    pagePath: null,
+    status: "guide",
+    statusLabel: "Verified guide",
+    note: "100/75/50% tiered credit by repair speed, 6-month deadline, up to 3 months — plus the MUD rules, a worked example, and the eligibility checker. Processing time unverified.",
+    pagePath: "/guides/leak-adjustment/houston/",
     officialUrl: "https://www.houstonwaterbills.houstontx.gov/ProdDP/Billing/AccountBasedServiceRequest/UniversalAdjustmentRequest",
     officialLabel: "Houston Universal Adjustment Request",
     phone: null,
@@ -547,10 +1222,10 @@ export const METRO_ADJUSTMENT_ROWS: MetroAdjustmentRow[] = [
   {
     metro: "Dallas",
     utility: "City of Dallas Water Utilities",
-    status: "competitor",
-    statusLabel: "Covered by WaterShortcut",
-    note: "Verified rule exists (lowest-rate reprice of excess use, 90-day deadline on the city form, once per 12 months, up to 3 months) but no guide in this wave — WaterShortcut owns Dallas. Apply on the city's official page.",
-    pagePath: null,
+    status: "guide",
+    statusLabel: "Verified guide — deadline unverified",
+    note: "Excess usage repriced at the lowest rate, once per 12 months, up to 3 months, up to 60 days to process. Filing deadline is not stated on the city's current page — confirm it on the form.",
+    pagePath: "/guides/leak-adjustment/dallas/",
     officialUrl: "https://dallascityhall.com/departments/waterutilities/Pages/Request-a-Leak-Adjustment.aspx",
     officialLabel: "Dallas leak adjustment page",
     phone: null,
@@ -559,9 +1234,9 @@ export const METRO_ADJUSTMENT_ROWS: MetroAdjustmentRow[] = [
     metro: "McAllen",
     utility: "McAllen Public Utility (MPU)",
     status: "unverified",
-    statusLabel: "No verified policy yet",
-    note: "No published leak-adjustment policy, form, deadline, or formula was found. MPU's site tells customers with a high bill to check for leaks first, then request a recheck read. Ask MPU directly whether case-by-case credits are reviewed.",
-    pagePath: null,
+    statusLabel: "No written policy — guide",
+    note: "No published leak-adjustment policy, form, deadline, or formula was found (Nov 16, 2026). MPU's site tells customers with a high bill to check for leaks first, then request a recheck read. The guide has the ask script and proof checklist.",
+    pagePath: "/guides/leak-adjustment/mcallen/",
     officialUrl: null,
     officialLabel: null,
     phone: "956-681-1600",
@@ -570,9 +1245,9 @@ export const METRO_ADJUSTMENT_ROWS: MetroAdjustmentRow[] = [
     metro: "Corpus Christi",
     utility: "Corpus Christi Water",
     status: "unverified",
-    statusLabel: "No water-side policy yet",
+    statusLabel: "No water-side policy — guide",
     note: "No published water-side leak-adjustment policy was found. One verified relief does exist: under Code Sec. 55-100(e)(4), the director may adjust the wastewater bill for a hidden leak during the Dec–Feb winter quarter, with proof of repairs.",
-    pagePath: null,
+    pagePath: "/guides/leak-adjustment/corpus-christi/",
     officialUrl: "https://legistar.granicus.com/CorpusChristi/attachments/92320581-a173-4e3d-98ef-0ce4c3ba7ce4.pdf",
     officialLabel: "Corpus Christi Code Sec. 55-100 (wastewater relief)",
     phone: "(361) 826-3100",
@@ -581,9 +1256,9 @@ export const METRO_ADJUSTMENT_ROWS: MetroAdjustmentRow[] = [
     metro: "Lubbock",
     utility: "City of Lubbock Water Utilities",
     status: "unverified",
-    statusLabel: "No verified policy yet",
-    note: "No written leak-adjustment policy was found on the city site; the code covers billing-error adjustments only. That does not rule out a case-by-case credit — ask the city directly.",
-    pagePath: null,
+    statusLabel: "No written policy — guide",
+    note: "No written leak-adjustment policy was found on the city site (confirmed twice: Nov 6 and Nov 16, 2026); the code covers billing-error adjustments only. That does not rule out a case-by-case credit — the guide has the ask script and proof checklist.",
+    pagePath: "/guides/leak-adjustment/lubbock/",
     officialUrl: null,
     officialLabel: null,
     phone: "806-775-2509",
@@ -685,6 +1360,79 @@ export const MUD_RULES: MudRuleEntry[] = [
     proof: "Call a Customer Service Representative at 281-367-1271 for more information.",
     sourceUrl: "https://woodlandswater.org/water-and-sewer-service-faqs/",
     sourceLabel: "Woodlands Water FAQs",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* MUD directory — Harris County MUD 501 / 71 / 365 (first three)     */
+/* ------------------------------------------------------------------ */
+
+export interface MudDirectoryEntry {
+  name: string;
+  area: string;
+  statusLabel: string;
+  /** Filing deadline / frequency limits (verified terms only). */
+  deadline: string;
+  /** Credit terms (verified terms only). */
+  credit: string;
+  /** Proof / how to apply (verified terms only). */
+  proof: string;
+  /** Official source link, or null when no verified source exists. */
+  sourceUrl: string | null;
+  sourceLabel: string | null;
+  /** False when any term is unverified — the row then says so plainly. */
+  verified: boolean;
+}
+
+/**
+ * Directory table for the MUD explainer page. Terms come only from
+ * lib/utility-rules.ts (MUD 71) and the verified MUD research
+ * (MUD_RULES above). MUD 365 has NO verified terms in our research
+ * file, so its row states that plainly and lists no figures — a second
+ * research pass is needed before any MUD 365 term can be published.
+ */
+export const MUD_DIRECTORY: MudDirectoryEntry[] = [
+  {
+    name: "Harris County MUD 71",
+    area: "Cypress / Katy area — about 17,000 people (Mason Lakes, Bridgewater, Cypress Glen)",
+    statusLabel: "Verified rule",
+    deadline:
+      "File a sworn written application within 3 months of the repair date (about 90 days). No more than 2 credits in any 12-month period, covering at most 2 consecutive billing cycles.",
+    credit:
+      "Excess usage above the customer's average charged at one-half of the normal rate. Visible leaks excluded. West Harris County Regional Water Authority pumpage and surface-water fees and the flat-rate sewer portion are not adjustable.",
+    proof:
+      "Sworn written application plus certification of an Eye On Water account with the smart meter registered — no credit until the district confirms the registration. At least 12 billing cycles of usage history at the address.",
+    sourceUrl:
+      "https://mail.regionalwater.net/images/documents/HC%2071%20Leak%20Adjustment%20Amended%20Resolution%20Adopting%20Policy%20and%20Procedures_8.28.23.pdf",
+    sourceLabel: "MUD 71 amended resolution (Aug 28, 2023)",
+    verified: true,
+  },
+  {
+    name: "Harris County MUD 501",
+    area: "Towne Lake community, Cypress area",
+    statusLabel: "Partial — deadline + Eye On Water verified",
+    deadline: "Apply within 6 months of the date of repair (verified).",
+    credit:
+      "NOT verified — credit percentage, maximum months covered, and frequency limit are not published here. The updated policy PDF lives on Google Drive and its text would not render in the research pass. Do not copy the 50% figure from other MUDs.",
+    proof:
+      "Completed leak adjustment form plus the required repair documentation, and Eye On Water registration (required for a credit). Operator: Inframark, 832-467-1599.",
+    sourceUrl: "https://www.hcmud501.org/water/update-to-mud-501-policy-for-leak-adjustment-credits/",
+    sourceLabel: "MUD 501 policy update page",
+    verified: false,
+  },
+  {
+    name: "Harris County MUD 365",
+    area: "Houston area — district boundaries not verified",
+    statusLabel: "Not verified — second research pass needed",
+    deadline:
+      "NOT verified — no deadline in our research file. Do not rely on any figure until the district's rate order or policy is read.",
+    credit:
+      "NOT verified — no credit terms in our research file. Do not rely on any figure until the district's rate order or policy is read.",
+    proof:
+      "NOT verified — confirm with the district or its operator what proof is needed and where to file.",
+    sourceUrl: null,
+    sourceLabel: null,
+    verified: false,
   },
 ];
 
