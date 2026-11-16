@@ -1,0 +1,55 @@
+# ============================================================
+# Freeze-Burst Risk Tonight — nightly forecast refresh
+# Fetches the Open-Meteo forecast (free, no API key) for all 50
+# towns and commits public/data/freeze-risk.json, which the
+# FreezeRiskTonight tool reads. The tool prefers this file when
+# its forecast_date is today (America/Chicago) and falls back to
+# a live client-side fetch when stale or missing.
+#
+# Schedule: daily at 02:00 UTC in freeze season (Nov–Mar), weekly
+# on Sundays in summer (Apr–Oct). 02:00 UTC is 8pm Central, so
+# "tonight" is the night about to start.
+# Stdlib-only script — no pip install needed. No secrets needed.
+# ============================================================
+name: freeze-risk-nightly
+
+on:
+  schedule:
+    - cron: "0 2 * 11,12,1,2,3 *" # Nov–Mar: nightly
+    - cron: "0 2 * 4-10 0" # Apr–Oct: Sundays only
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Refresh tonight's freeze-risk forecast
+        run: python scripts/fetch-freeze-risk.py
+
+      - name: Summarize bands
+        run: |
+          python -c "
+          import json
+          from collections import Counter
+          d = json.load(open('public/data/freeze-risk.json'))
+          c = Counter(t['band'] for t in d['towns'].values())
+          print(f\"Night of {d['forecast_date']}: {len(d['towns'])} towns — \" +
+                ', '.join(f\"{k}: {v}\" for k, v in sorted(c.items())))
+          " | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit updated forecast
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/freeze-risk.json scripts/freeze-coords.json
+          git diff --cached --quiet || git commit -m "Nightly freeze-risk forecast $(date -u +%F)"
+          git push

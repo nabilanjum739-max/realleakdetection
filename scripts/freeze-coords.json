@@ -1,0 +1,502 @@
+{
+  "katy": {
+    "town": "Katy",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 29.7858,
+    "lon": -95.8244,
+    "county": "Harris County",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "sugar-land": {
+    "town": "Sugar Land",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 29.6197,
+    "lon": -95.635,
+    "county": "Fort Bend",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "the-woodlands": {
+    "town": "The Woodlands",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 30.158,
+    "lon": -95.4894,
+    "county": "Montgomery",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "pearland": {
+    "town": "Pearland",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 29.5636,
+    "lon": -95.2861,
+    "county": "Brazoria",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "cypress": {
+    "town": "Cypress",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 29.9691,
+    "lon": -95.6972,
+    "county": "Harris County",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "spring": {
+    "town": "Spring",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 30.0799,
+    "lon": -95.4172,
+    "county": "Harris County",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "pasadena": {
+    "town": "Pasadena",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 29.6911,
+    "lon": -95.2091,
+    "county": "Harris County",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "league-city": {
+    "town": "League City",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 29.5074,
+    "lon": -95.0949,
+    "county": "Galveston",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "conroe": {
+    "town": "Conroe",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 30.3119,
+    "lon": -95.4561,
+    "county": "Montgomery",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "humble": {
+    "town": "Humble",
+    "metro": "Houston",
+    "metro_slug": "houston",
+    "lat": 29.9988,
+    "lon": -95.2622,
+    "county": "Harris County",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "plano": {
+    "town": "Plano",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 33.0198,
+    "lon": -96.6989,
+    "county": "Collin",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "frisco": {
+    "town": "Frisco",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 33.1507,
+    "lon": -96.8236,
+    "county": "Collin",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "irving": {
+    "town": "Irving",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 32.814,
+    "lon": -96.9489,
+    "county": "Dallas",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "garland": {
+    "town": "Garland",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 32.9126,
+    "lon": -96.6389,
+    "county": "Dallas",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "mckinney": {
+    "town": "McKinney",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 33.1976,
+    "lon": -96.6153,
+    "county": "Collin",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "allen": {
+    "town": "Allen",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 33.1032,
+    "lon": -96.6706,
+    "county": "Collin",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "richardson": {
+    "town": "Richardson",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 32.9482,
+    "lon": -96.7297,
+    "county": "Dallas",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "carrollton": {
+    "town": "Carrollton",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 32.9537,
+    "lon": -96.8903,
+    "county": "Dallas",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "lewisville": {
+    "town": "Lewisville",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 33.0462,
+    "lon": -96.9942,
+    "county": "Denton",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "denton": {
+    "town": "Denton",
+    "metro": "Dallas",
+    "metro_slug": "dallas",
+    "lat": 33.2148,
+    "lon": -97.1331,
+    "county": "Denton",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "new-braunfels": {
+    "town": "New Braunfels",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.703,
+    "lon": -98.1244,
+    "county": "Comal",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "boerne": {
+    "town": "Boerne",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.7236,
+    "lon": -98.6947,
+    "county": "Bexar",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "schertz": {
+    "town": "Schertz",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.5522,
+    "lon": -98.2697,
+    "county": "Guadalupe",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "cibolo": {
+    "town": "Cibolo",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.5616,
+    "lon": -98.227,
+    "county": "Guadalupe",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "converse": {
+    "town": "Converse",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.518,
+    "lon": -98.3161,
+    "county": "Bexar",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "universal-city": {
+    "town": "Universal City",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.548,
+    "lon": -98.2911,
+    "county": "Bexar",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "live-oak": {
+    "town": "Live Oak",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.5652,
+    "lon": -98.3364,
+    "county": "Bexar",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "leon-valley": {
+    "town": "Leon Valley",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.4952,
+    "lon": -98.6186,
+    "county": "Bexar",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "alamo-heights": {
+    "town": "Alamo Heights",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.485,
+    "lon": -98.4659,
+    "county": "Bexar",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "selma": {
+    "town": "Selma",
+    "metro": "San Antonio",
+    "metro_slug": "san-antonio",
+    "lat": 29.5844,
+    "lon": -98.3059,
+    "county": "Bexar",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "round-rock": {
+    "town": "Round Rock",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 30.5083,
+    "lon": -97.6789,
+    "county": "Williamson",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "cedar-park": {
+    "town": "Cedar Park",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 30.5052,
+    "lon": -97.8203,
+    "county": "Williamson",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "pflugerville": {
+    "town": "Pflugerville",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 30.4394,
+    "lon": -97.62,
+    "county": "Travis",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "georgetown": {
+    "town": "Georgetown",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 30.6327,
+    "lon": -97.6772,
+    "county": "Williamson",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "leander": {
+    "town": "Leander",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 30.5788,
+    "lon": -97.8531,
+    "county": "Williamson",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "kyle": {
+    "town": "Kyle",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 29.9891,
+    "lon": -97.8772,
+    "county": "Hays",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "buda": {
+    "town": "Buda",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 30.0852,
+    "lon": -97.8403,
+    "county": "Hays",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "san-marcos": {
+    "town": "San Marcos",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 29.8833,
+    "lon": -97.9414,
+    "county": "Hays",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "dripping-springs": {
+    "town": "Dripping Springs",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 30.1902,
+    "lon": -98.0867,
+    "county": "Hays",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  },
+  "lakeway": {
+    "town": "Lakeway",
+    "metro": "Austin",
+    "metro_slug": "austin",
+    "lat": 30.3638,
+    "lon": -97.9796,
+    "county": "Travis",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "arlington": {
+    "town": "Arlington",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.7357,
+    "lon": -97.1081,
+    "county": "Tarrant",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "mansfield": {
+    "town": "Mansfield",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.5632,
+    "lon": -97.1417,
+    "county": "Tarrant",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "grand-prairie": {
+    "town": "Grand Prairie",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.6985,
+    "lon": -97.0469,
+    "county": "Tarrant",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "north-richland-hills": {
+    "town": "North Richland Hills",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.8343,
+    "lon": -97.2289,
+    "county": "Tarrant",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "keller": {
+    "town": "Keller",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.9346,
+    "lon": -97.2517,
+    "county": "Tarrant",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "southlake": {
+    "town": "Southlake",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.9412,
+    "lon": -97.1342,
+    "county": "Tarrant",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "grapevine": {
+    "town": "Grapevine",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.9343,
+    "lon": -97.0781,
+    "county": "Tarrant",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "bedford": {
+    "town": "Bedford",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.844,
+    "lon": -97.1431,
+    "county": "Tarrant",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "euless": {
+    "town": "Euless",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.8371,
+    "lon": -97.082,
+    "county": "Tarrant",
+    "timezone": "America/Chicago",
+    "geocode_match": "county-match"
+  },
+  "burleson": {
+    "town": "Burleson",
+    "metro": "Fort Worth",
+    "metro_slug": "fort-worth",
+    "lat": 32.5421,
+    "lon": -97.3208,
+    "county": "Johnson",
+    "timezone": "America/Chicago",
+    "geocode_match": "first-texas"
+  }
+}
