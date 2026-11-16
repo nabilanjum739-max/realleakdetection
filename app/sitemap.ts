@@ -4,7 +4,7 @@ import { TOWNS, METROS } from "@/lib/towns";
 import { SERVICES } from "@/lib/services";
 
 /**
- * Sitemap: home + 5 city hubs + 50 town pages + 10 service pillars.
+ * Sitemap: home + 5 city hubs + 50 town pages + 10 service pillars + tools.
  * Submit to Google Search Console ONLY after the custom domain is live
  * (never for the vercel.app staging URLs — those stay noindex).
  */
@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   const urls: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
+    { url: `${SITE_URL}/tools/water-bill-spike/`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
   ];
   for (const metro of METROS) {
     urls.push({

@@ -102,11 +102,12 @@ export function extractFaqs(html: string | null): Array<{ q: string; a: string }
   return qas;
 }
 
-export function faqPageSchema(row: TownRow): object | null {
-  // Only for published rows — drafts render a placeholder, not the
-  // article, so FAQ schema there would describe invisible content.
-  if (row.page_status !== "published") return null;
-  const qas = extractFaqs(row.page_html);
+/**
+ * FAQPage from an explicit Q&A list (tool pages). Single source of truth:
+ * the page renders its visible FAQ block from the same list, so the schema
+ * and the visible content can never drift apart.
+ */
+export function faqPageSchemaFromQAs(qas: Array<{ q: string; a: string }>): object | null {
   if (!qas.length) return null;
   return {
     "@context": "https://schema.org",
@@ -117,6 +118,13 @@ export function faqPageSchema(row: TownRow): object | null {
       acceptedAnswer: { "@type": "Answer", text: a },
     })),
   };
+}
+
+export function faqPageSchema(row: TownRow): object | null {
+  // Only for published rows — drafts render a placeholder, not the
+  // article, so FAQ schema there would describe invisible content.
+  if (row.page_status !== "published") return null;
+  return faqPageSchemaFromQAs(extractFaqs(row.page_html));
 }
 
 export function howToSchema(row: TownRow) {
