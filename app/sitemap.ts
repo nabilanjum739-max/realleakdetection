@@ -4,16 +4,65 @@ import { TOWNS, METROS } from "@/lib/towns";
 import { SERVICES } from "@/lib/services";
 
 /**
- * Sitemap: home + 10 city hubs + 100 town pages + 10 service pillars + tools.
+ * Sitemap: home + 10 city hubs + 100 town pages + 10 service pillars
+ * + 12 tools (+ hub + methodology) + guides (index + 4 guides
+ * + leak-adjustment index + 5 cities + MUD explainer).
  * Submit to Google Search Console ONLY after the custom domain is live
  * (never for the vercel.app staging URLs — those stay noindex).
  */
+const TOOLS = [
+  "water-bill-spike",
+  "freeze-risk-tonight",
+  "freeze-damage-estimator",
+  "leak-cost-estimator",
+  "home-buyer-leak-risk",
+  "insurance-claim-pack",
+  "leak-adjustment-checker",
+  "sewer-winter-averaging",
+  "who-pays",
+  "cost-of-waiting",
+  "sewer-lateral-estimator",
+  "plumber-price-estimator",
+];
+
+const GUIDES = [
+  "",
+  "sewer-camera-inspection-cost-texas",
+  "leak-detection-cost",
+  "water-main-yard-line-leak-texas",
+  "does-insurance-cover-slab-leak-texas",
+  "leak-adjustment",
+  "leak-adjustment/san-antonio",
+  "leak-adjustment/austin",
+  "leak-adjustment/fort-worth",
+  "leak-adjustment/el-paso",
+  "leak-adjustment/amarillo",
+  "leak-adjustment/mud",
+];
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   const urls: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${SITE_URL}/tools/water-bill-spike/`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE_URL}/tools/`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${SITE_URL}/tools/methodology/`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
   ];
+  for (const tool of TOOLS) {
+    urls.push({
+      url: `${SITE_URL}/tools/${tool}/`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    });
+  }
+  for (const guide of GUIDES) {
+    urls.push({
+      url: `${SITE_URL}/guides/${guide ? `${guide}/` : ""}`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    });
+  }
   for (const metro of METROS) {
     urls.push({
       url: `${SITE_URL}/tx/${metro}/`,
