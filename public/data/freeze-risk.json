@@ -1,7 +1,7 @@
 {
-  "generated_at_utc": "2026-11-16T07:58:57Z",
-  "forecast_date": "2026-11-16",
-  "forecast_night": "Night of Nov 16, 2026 (6pm-9am Central)",
+  "generated_at_utc": "2026-11-17T09:52:30Z",
+  "forecast_date": "2026-11-17",
+  "forecast_night": "Night of Nov 17, 2026 (6pm-9am Central)",
   "source": "Open-Meteo forecast API (https://open-meteo.com)",
   "timezone": "America/Chicago",
   "window": "18:00-09:00 local, inclusive",
@@ -9,7 +9,7 @@
     "abernathy": {
       "town": "Abernathy",
       "metro": "Lubbock",
-      "low_f": 43.7,
+      "low_f": 39.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -19,7 +19,7 @@
     "alamo": {
       "town": "Alamo",
       "metro": "McAllen",
-      "low_f": 54.5,
+      "low_f": 54.3,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -29,7 +29,7 @@
     "alamo-heights": {
       "town": "Alamo Heights",
       "metro": "San Antonio",
-      "low_f": 44.2,
+      "low_f": 43.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -39,7 +39,7 @@
     "alice": {
       "town": "Alice",
       "metro": "Corpus Christi",
-      "low_f": 50.6,
+      "low_f": 47.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -49,7 +49,7 @@
     "allen": {
       "town": "Allen",
       "metro": "Dallas",
-      "low_f": 40.2,
+      "low_f": 40.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -59,7 +59,7 @@
     "amarillo": {
       "town": "Amarillo",
       "metro": "Amarillo",
-      "low_f": 41.5,
+      "low_f": 43.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -69,7 +69,7 @@
     "anthony": {
       "town": "Anthony",
       "metro": "El Paso",
-      "low_f": 45.2,
+      "low_f": 46.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -79,7 +79,7 @@
     "aransas-pass": {
       "town": "Aransas Pass",
       "metro": "Corpus Christi",
-      "low_f": 52.6,
+      "low_f": 54.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -89,7 +89,7 @@
     "arlington": {
       "town": "Arlington",
       "metro": "Fort Worth",
-      "low_f": 41.4,
+      "low_f": 40.7,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -99,7 +99,7 @@
     "bedford": {
       "town": "Bedford",
       "metro": "Fort Worth",
-      "low_f": 41.8,
+      "low_f": 39.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -109,7 +109,7 @@
     "boerne": {
       "town": "Boerne",
       "metro": "San Antonio",
-      "low_f": 42.0,
+      "low_f": 41.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -119,7 +119,7 @@
     "borger": {
       "town": "Borger",
       "metro": "Amarillo",
-      "low_f": 43.2,
+      "low_f": 44.3,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -129,7 +129,7 @@
     "buda": {
       "town": "Buda",
       "metro": "Austin",
-      "low_f": 43.2,
+      "low_f": 42.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -139,7 +139,7 @@
     "burleson": {
       "town": "Burleson",
       "metro": "Fort Worth",
-      "low_f": 40.1,
+      "low_f": 38.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -149,7 +149,7 @@
     "canutillo": {
       "town": "Canutillo",
       "metro": "El Paso",
-      "low_f": 45.7,
+      "low_f": 46.7,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -159,7 +159,7 @@
     "canyon": {
       "town": "Canyon",
       "metro": "Amarillo",
-      "low_f": 42.0,
+      "low_f": 43.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -169,7 +169,7 @@
     "carrollton": {
       "town": "Carrollton",
       "metro": "Dallas",
-      "low_f": 39.9,
+      "low_f": 39.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -179,7 +179,7 @@
     "cedar-park": {
       "town": "Cedar Park",
       "metro": "Austin",
-      "low_f": 42.8,
+      "low_f": 42.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -189,7 +189,7 @@
     "cibolo": {
       "town": "Cibolo",
       "metro": "San Antonio",
-      "low_f": 45.1,
+      "low_f": 44.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -199,7 +199,7 @@
     "clint": {
       "town": "Clint",
       "metro": "El Paso",
-      "low_f": 46.4,
+      "low_f": 45.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -209,7 +209,7 @@
     "conroe": {
       "town": "Conroe",
       "metro": "Houston",
-      "low_f": 44.1,
+      "low_f": 46.4,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -219,7 +219,7 @@
     "converse": {
       "town": "Converse",
       "metro": "San Antonio",
-      "low_f": 44.9,
+      "low_f": 44.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -229,7 +229,7 @@
     "corpus-christi": {
       "town": "Corpus Christi",
       "metro": "Corpus Christi",
-      "low_f": 52.2,
+      "low_f": 52.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -239,7 +239,7 @@
     "cypress": {
       "town": "Cypress",
       "metro": "Houston",
-      "low_f": 45.4,
+      "low_f": 47.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -249,7 +249,7 @@
     "dalhart": {
       "town": "Dalhart",
       "metro": "Amarillo",
-      "low_f": 41.1,
+      "low_f": 45.7,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -259,7 +259,7 @@
     "denton": {
       "town": "Denton",
       "metro": "Dallas",
-      "low_f": 40.7,
+      "low_f": 39.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -269,7 +269,7 @@
     "donna": {
       "town": "Donna",
       "metro": "McAllen",
-      "low_f": 54.4,
+      "low_f": 54.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -289,7 +289,7 @@
     "dumas": {
       "town": "Dumas",
       "metro": "Amarillo",
-      "low_f": 41.3,
+      "low_f": 45.7,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -299,7 +299,7 @@
     "edinburg": {
       "town": "Edinburg",
       "metro": "McAllen",
-      "low_f": 55.0,
+      "low_f": 53.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -309,7 +309,7 @@
     "el-paso": {
       "town": "El Paso",
       "metro": "El Paso",
-      "low_f": 47.6,
+      "low_f": 46.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -319,7 +319,7 @@
     "euless": {
       "town": "Euless",
       "metro": "Fort Worth",
-      "low_f": 41.0,
+      "low_f": 39.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -329,7 +329,7 @@
     "fabens": {
       "town": "Fabens",
       "metro": "El Paso",
-      "low_f": 46.9,
+      "low_f": 46.4,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -339,7 +339,7 @@
     "frisco": {
       "town": "Frisco",
       "metro": "Dallas",
-      "low_f": 42.1,
+      "low_f": 42.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -349,7 +349,7 @@
     "fritch": {
       "town": "Fritch",
       "metro": "Amarillo",
-      "low_f": 42.9,
+      "low_f": 44.7,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -359,7 +359,7 @@
     "garland": {
       "town": "Garland",
       "metro": "Dallas",
-      "low_f": 40.0,
+      "low_f": 40.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -369,7 +369,7 @@
     "georgetown": {
       "town": "Georgetown",
       "metro": "Austin",
-      "low_f": 42.4,
+      "low_f": 41.3,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -379,7 +379,7 @@
     "grand-prairie": {
       "town": "Grand Prairie",
       "metro": "Fort Worth",
-      "low_f": 41.3,
+      "low_f": 39.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -389,7 +389,7 @@
     "grapevine": {
       "town": "Grapevine",
       "metro": "Fort Worth",
-      "low_f": 41.6,
+      "low_f": 40.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -399,7 +399,7 @@
     "hereford": {
       "town": "Hereford",
       "metro": "Amarillo",
-      "low_f": 41.2,
+      "low_f": 43.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -409,7 +409,7 @@
     "hidalgo": {
       "town": "Hidalgo",
       "metro": "McAllen",
-      "low_f": 55.8,
+      "low_f": 53.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -419,7 +419,7 @@
     "horizon-city": {
       "town": "Horizon City",
       "metro": "El Paso",
-      "low_f": 46.2,
+      "low_f": 46.7,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -429,7 +429,7 @@
     "humble": {
       "town": "Humble",
       "metro": "Houston",
-      "low_f": 43.3,
+      "low_f": 47.3,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -439,7 +439,7 @@
     "idalou": {
       "town": "Idalou",
       "metro": "Lubbock",
-      "low_f": 44.2,
+      "low_f": 39.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -449,7 +449,7 @@
     "ingleside": {
       "town": "Ingleside",
       "metro": "Corpus Christi",
-      "low_f": 51.1,
+      "low_f": 51.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -459,7 +459,7 @@
     "irving": {
       "town": "Irving",
       "metro": "Dallas",
-      "low_f": 41.1,
+      "low_f": 40.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -469,7 +469,7 @@
     "katy": {
       "town": "Katy",
       "metro": "Houston",
-      "low_f": 45.3,
+      "low_f": 47.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -479,7 +479,7 @@
     "keller": {
       "town": "Keller",
       "metro": "Fort Worth",
-      "low_f": 39.7,
+      "low_f": 39.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -489,7 +489,7 @@
     "kyle": {
       "town": "Kyle",
       "metro": "Austin",
-      "low_f": 43.8,
+      "low_f": 43.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -499,7 +499,7 @@
     "lakeway": {
       "town": "Lakeway",
       "metro": "Austin",
-      "low_f": 42.1,
+      "low_f": 41.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -509,7 +509,7 @@
     "league-city": {
       "town": "League City",
       "metro": "Houston",
-      "low_f": 49.0,
+      "low_f": 52.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -519,7 +519,7 @@
     "leander": {
       "town": "Leander",
       "metro": "Austin",
-      "low_f": 41.7,
+      "low_f": 41.3,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -529,7 +529,7 @@
     "leon-valley": {
       "town": "Leon Valley",
       "metro": "San Antonio",
-      "low_f": 44.8,
+      "low_f": 44.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -539,7 +539,7 @@
     "levelland": {
       "town": "Levelland",
       "metro": "Lubbock",
-      "low_f": 43.3,
+      "low_f": 40.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -549,7 +549,7 @@
     "lewisville": {
       "town": "Lewisville",
       "metro": "Dallas",
-      "low_f": 41.4,
+      "low_f": 39.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -559,7 +559,7 @@
     "littlefield": {
       "town": "Littlefield",
       "metro": "Lubbock",
-      "low_f": 42.8,
+      "low_f": 41.7,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -569,7 +569,7 @@
     "live-oak": {
       "town": "Live Oak",
       "metro": "San Antonio",
-      "low_f": 43.8,
+      "low_f": 42.3,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -579,7 +579,7 @@
     "lubbock": {
       "town": "Lubbock",
       "metro": "Lubbock",
-      "low_f": 44.3,
+      "low_f": 39.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -589,7 +589,7 @@
     "mansfield": {
       "town": "Mansfield",
       "metro": "Fort Worth",
-      "low_f": 41.3,
+      "low_f": 39.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -599,7 +599,7 @@
     "mathis": {
       "town": "Mathis",
       "metro": "Corpus Christi",
-      "low_f": 48.8,
+      "low_f": 46.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -609,7 +609,7 @@
     "mcallen": {
       "town": "McAllen",
       "metro": "McAllen",
-      "low_f": 55.9,
+      "low_f": 55.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -619,7 +619,7 @@
     "mckinney": {
       "town": "McKinney",
       "metro": "Dallas",
-      "low_f": 38.5,
+      "low_f": 37.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -629,7 +629,7 @@
     "mercedes": {
       "town": "Mercedes",
       "metro": "McAllen",
-      "low_f": 53.9,
+      "low_f": 53.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -639,7 +639,7 @@
     "mission": {
       "town": "Mission",
       "metro": "McAllen",
-      "low_f": 56.4,
+      "low_f": 54.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -649,7 +649,7 @@
     "new-braunfels": {
       "town": "New Braunfels",
       "metro": "San Antonio",
-      "low_f": 44.2,
+      "low_f": 43.3,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -659,7 +659,7 @@
     "north-richland-hills": {
       "town": "North Richland Hills",
       "metro": "Fort Worth",
-      "low_f": 41.0,
+      "low_f": 39.4,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -669,7 +669,7 @@
     "pampa": {
       "town": "Pampa",
       "metro": "Amarillo",
-      "low_f": 42.3,
+      "low_f": 44.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -679,7 +679,7 @@
     "pasadena": {
       "town": "Pasadena",
       "metro": "Houston",
-      "low_f": 45.5,
+      "low_f": 50.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -689,7 +689,7 @@
     "pearland": {
       "town": "Pearland",
       "metro": "Houston",
-      "low_f": 46.4,
+      "low_f": 51.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -699,7 +699,7 @@
     "perryton": {
       "town": "Perryton",
       "metro": "Amarillo",
-      "low_f": 43.1,
+      "low_f": 45.4,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -709,7 +709,7 @@
     "pflugerville": {
       "town": "Pflugerville",
       "metro": "Austin",
-      "low_f": 44.0,
+      "low_f": 43.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -719,7 +719,7 @@
     "pharr": {
       "town": "Pharr",
       "metro": "McAllen",
-      "low_f": 54.5,
+      "low_f": 54.3,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -729,7 +729,7 @@
     "plainview": {
       "town": "Plainview",
       "metro": "Lubbock",
-      "low_f": 43.2,
+      "low_f": 40.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -739,7 +739,7 @@
     "plano": {
       "town": "Plano",
       "metro": "Dallas",
-      "low_f": 40.1,
+      "low_f": 39.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -749,7 +749,7 @@
     "port-aransas": {
       "town": "Port Aransas",
       "metro": "Corpus Christi",
-      "low_f": 56.0,
+      "low_f": 58.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -759,7 +759,7 @@
     "portland": {
       "town": "Portland",
       "metro": "Corpus Christi",
-      "low_f": 49.9,
+      "low_f": 49.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -769,7 +769,7 @@
     "ralls": {
       "town": "Ralls",
       "metro": "Lubbock",
-      "low_f": 43.4,
+      "low_f": 40.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -779,7 +779,7 @@
     "richardson": {
       "town": "Richardson",
       "metro": "Dallas",
-      "low_f": 41.5,
+      "low_f": 41.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -789,7 +789,7 @@
     "robstown": {
       "town": "Robstown",
       "metro": "Corpus Christi",
-      "low_f": 50.8,
+      "low_f": 48.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -799,7 +799,7 @@
     "rockport": {
       "town": "Rockport",
       "metro": "Corpus Christi",
-      "low_f": 53.1,
+      "low_f": 54.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -809,7 +809,7 @@
     "round-rock": {
       "town": "Round Rock",
       "metro": "Austin",
-      "low_f": 42.7,
+      "low_f": 41.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -819,7 +819,7 @@
     "san-elizario": {
       "town": "San Elizario",
       "metro": "El Paso",
-      "low_f": 43.4,
+      "low_f": 44.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -829,7 +829,7 @@
     "san-juan": {
       "town": "San Juan",
       "metro": "McAllen",
-      "low_f": 54.6,
+      "low_f": 54.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -839,7 +839,7 @@
     "san-marcos": {
       "town": "San Marcos",
       "metro": "Austin",
-      "low_f": 44.9,
+      "low_f": 43.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -849,7 +849,7 @@
     "schertz": {
       "town": "Schertz",
       "metro": "San Antonio",
-      "low_f": 44.9,
+      "low_f": 42.2,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -859,7 +859,7 @@
     "selma": {
       "town": "Selma",
       "metro": "San Antonio",
-      "low_f": 44.2,
+      "low_f": 42.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -869,7 +869,7 @@
     "shallowater": {
       "town": "Shallowater",
       "metro": "Lubbock",
-      "low_f": 44.2,
+      "low_f": 39.0,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -879,7 +879,7 @@
     "sinton": {
       "town": "Sinton",
       "metro": "Corpus Christi",
-      "low_f": 50.6,
+      "low_f": 47.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -889,7 +889,7 @@
     "slaton": {
       "town": "Slaton",
       "metro": "Lubbock",
-      "low_f": 44.5,
+      "low_f": 38.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -899,7 +899,7 @@
     "socorro": {
       "town": "Socorro",
       "metro": "El Paso",
-      "low_f": 43.3,
+      "low_f": 44.7,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -909,7 +909,7 @@
     "southlake": {
       "town": "Southlake",
       "metro": "Fort Worth",
-      "low_f": 41.8,
+      "low_f": 39.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -919,7 +919,7 @@
     "spring": {
       "town": "Spring",
       "metro": "Houston",
-      "low_f": 44.6,
+      "low_f": 46.6,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -929,7 +929,7 @@
     "sugar-land": {
       "town": "Sugar Land",
       "metro": "Houston",
-      "low_f": 46.2,
+      "low_f": 50.7,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -939,7 +939,7 @@
     "the-woodlands": {
       "town": "The Woodlands",
       "metro": "Houston",
-      "low_f": 44.2,
+      "low_f": 46.8,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -959,7 +959,7 @@
     "universal-city": {
       "town": "Universal City",
       "metro": "San Antonio",
-      "low_f": 44.6,
+      "low_f": 43.4,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -969,7 +969,7 @@
     "vinton": {
       "town": "Vinton",
       "metro": "El Paso",
-      "low_f": 44.6,
+      "low_f": 47.5,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -989,7 +989,7 @@
     "westway": {
       "town": "Westway",
       "metro": "El Paso",
-      "low_f": 44.1,
+      "low_f": 46.9,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
@@ -999,7 +999,7 @@
     "wolfforth": {
       "town": "Wolfforth",
       "metro": "Lubbock",
-      "low_f": 44.1,
+      "low_f": 39.1,
       "freeze_hours": 0,
       "hard_freeze_hours": 0,
       "hard_freeze": false,
