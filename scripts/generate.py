@@ -19,6 +19,7 @@ import json
 import os
 import re
 import sys
+import time
 
 import requests
 
@@ -294,21 +295,60 @@ def build_user_message(row: dict, sb=None) -> str:
     return msg + "\n" + "\n".join(lines)
 
 
+MAX_429_RETRIES = 4          # retries per call after the first attempt
+BACKOFF_BASE_S = 15          # 15s → 30s → 60s → 120s when no Retry-After
+RETRY_AFTER_CAP_S = 300      # never sleep longer than this on one retry
+
+
+def _retry_after_seconds(response) -> float | None:
+    """Parse the Retry-After header (seconds form) from a response."""
+    if response is None:
+        return None
+    raw = response.headers.get("Retry-After")
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None  # HTTP-date form — caller falls back to backoff
+
+
 def call_groq_text(system: str, user: str, model: str) -> str:
-    """One raw Groq chat call; returns the message content, fences stripped."""
+    """One raw Groq chat call; returns the message content, fences stripped.
+
+    HTTP 429 (rate limited) is retried with backoff: the Retry-After
+    header wins when present, otherwise 15s → 30s → 60s → 120s, up to
+    MAX_429_RETRIES retries. Run #14 showed why this matters: the main
+    generation call exhausts the free tier's per-minute budget, so
+    follow-up calls bounce instantly unless they wait. Every other
+    error keeps the old behaviour (raise on the first attempt).
+    """
     key = os.environ.get("GROQ_API_KEY")
     if not key:
         raise RuntimeError("GROQ_API_KEY is not set")
-    r = requests.post(API_URL, headers={
-        "Authorization": f"Bearer {key}", "Content-Type": "application/json",
-    }, json={
-        "model": model,
-        "messages": [{"role": "system", "content": system},
-                     {"role": "user", "content": user}],
-        "temperature": 0.4,
-        "max_tokens": 32000,
-    }, timeout=300)
-    r.raise_for_status()
+    retries = 0
+    while True:
+        r = requests.post(API_URL, headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        }, json={
+            "model": model,
+            "messages": [{"role": "system", "content": system},
+                         {"role": "user", "content": user}],
+            "temperature": 0.4,
+            "max_tokens": 32000,
+        }, timeout=300)
+        if r.status_code != 429 or retries >= MAX_429_RETRIES:
+            r.raise_for_status()
+            break
+        retries += 1
+        wait = _retry_after_seconds(r)
+        if wait is None:
+            wait = BACKOFF_BASE_S * (2 ** (retries - 1))
+        wait = min(max(wait, 1), RETRY_AFTER_CAP_S)
+        print(f"    Groq 429 rate limit — retry {retries}/"
+              f"{MAX_429_RETRIES} after {wait:g}s")
+        time.sleep(wait)
     content = r.json()["choices"][0]["message"]["content"]
     return re.sub(r"^```(?:json|html)?|```$", "", content.strip(),
                   flags=re.MULTILINE).strip()
@@ -343,6 +383,15 @@ def call_llm(system: str, user: str, model: str) -> dict:
 # town data, injects sibling links programmatically, and trims if the
 # expansions overshoot the body ceiling. validate.py still runs after
 # this in the workflow and remains the final arbiter.
+#
+# Run #14 proved the repair mechanics right (checks 10/11 fixed, gate
+# failed only on length) but every one of its ~44 expansion calls
+# bounced off Groq's per-minute limit (HTTP 429, all inside one
+# second): the calls fired back-to-back with no pacing and no retry.
+# The pass now batches deficient items (up to 3 sections / 6 FAQ
+# answers per call), paces calls a few seconds apart, and
+# call_groq_text retries 429s with backoff — a round costs ~6 calls
+# instead of ~22.
 # =====================================================================
 import validate as gate  # same directory; gate logic is the source of truth
 
@@ -558,6 +607,137 @@ def expand_faq_answer(faq: dict, lo: int, hi: int, row: dict,
         print("    FAQ expansion did not grow the answer")
         return None
     return out
+
+
+# ---------------------------------------------------------------------
+# Batched expansion. Run #14 fired ~44 repair calls back-to-back and
+# Groq's per-minute limit rejected every one. Batching cuts a round
+# to a handful of calls: up to BATCH_SEC_SIZE service sections per
+# call, up to BATCH_FAQ_SIZE FAQ answers per call, each item wrapped
+# in unique markers so it can be parsed back out and run through the
+# SAME per-item guards as a single-item expansion. Any item a batch
+# misses, corrupts or gets rejected falls back to the single-item
+# call for that item.
+# ---------------------------------------------------------------------
+BATCH_SEC_SIZE = 3
+BATCH_FAQ_SIZE = 6
+REPAIR_PACE_S = 4            # pause between repair-pass Groq calls
+
+
+def _parse_marked_blocks(text: str, tag: str, count: int) -> dict:
+    """Extract <<<TAG n>>> … <<<END TAG n>>> blocks → {n: content}."""
+    blocks = {}
+    for n in range(1, count + 1):
+        m = re.search(rf"<<<{tag} {n}>>>(.*?)<<<END {tag} {n}>>>",
+                      text, re.DOTALL)
+        if m:
+            blocks[n] = m.group(1).strip()
+    return blocks
+
+
+def expand_service_batch(segs: list[dict], lo: int, hi: int, row: dict,
+                         model: str, call) -> list:
+    """Expand a batch of service sections in ONE Groq call.
+
+    Returns a list aligned with `segs`: the new body HTML per section,
+    or None where both the batch output and the single-item fallback
+    failed or were rejected by the guards.
+    """
+    parts = [
+        "TOWN DATA — the only source of local facts:\n"
+        f"{_grounding_json(row)}\n",
+        f"Expand EACH section body below to {lo}–{hi} words. Keep "
+        "every fact already present in each section; add depth on "
+        "symptoms, how detection works and the steps a homeowner "
+        "should take, using only the data above. Keep each section's "
+        "HTML structure (paragraphs; any safety box first, word for "
+        "word). Return ONLY the expanded bodies, each wrapped "
+        "EXACTLY in the markers shown — no headings, no markdown "
+        "fences, nothing outside the markers.",
+    ]
+    for i, seg in enumerate(segs, 1):
+        parts.append(f"<<<SECTION {i}>>>\nHEADING: {seg['h2_text']}\n"
+                     f"CURRENT BODY HTML:\n{seg['body']}\n"
+                     f"<<<END SECTION {i}>>>")
+    blocks = {}
+    try:
+        out = call(EXPAND_SYSTEM, "\n\n".join(parts), model)
+        blocks = _parse_marked_blocks(out, "SECTION", len(segs))
+    except Exception as e:  # noqa: BLE001 — singles below are the fallback
+        print(f"    batch call failed ({e}) — single-item fallback")
+    results = []
+    for i, seg in enumerate(segs, 1):
+        new_body = None
+        block = blocks.get(i)
+        if block:
+            reason = _expansion_rejected(block, service=True,
+                                         original_html=seg["body"])
+            if reason:
+                print(f"    batch section {i} rejected ({reason}) — "
+                      "single-item fallback")
+            else:
+                new_body = _ensure_gas_safety(seg["body"], block)
+        if new_body is None:
+            try:
+                new_body = expand_service_section(seg, lo, hi, row,
+                                                  model, call)
+            except Exception as e:  # noqa: BLE001 — keep original
+                print(f"    section {i}: fallback call failed ({e})")
+        results.append(new_body)
+    return results
+
+
+def expand_faq_batch(faqs: list[dict], lo: int, hi: int, row: dict,
+                     model: str, call) -> list:
+    """Expand a batch of FAQ answers in ONE Groq call.
+
+    Returns a list aligned with `faqs`: the new answer text per item,
+    or None where both the batch output and the single-item fallback
+    failed or were rejected by the guards.
+    """
+    parts = [
+        "TOWN DATA — the only source of local facts:\n"
+        f"{_grounding_json(row)}\n",
+        f"For EACH question below, write an expanded answer of "
+        f"{lo}–{hi} words of plain text (no HTML, no markdown): a "
+        "direct answer in the first sentence, then the reasoning and "
+        "one concrete action the homeowner can take. Use only the "
+        "data above. Return ONLY the answers, each wrapped EXACTLY "
+        "in the markers shown — nothing outside the markers.",
+    ]
+    for i, faq in enumerate(faqs, 1):
+        parts.append(f"<<<QUESTION {i}>>>\n{faq['q']}\n"
+                     f"<<<END QUESTION {i}>>>")
+    blocks = {}
+    try:
+        out = call(EXPAND_SYSTEM, "\n\n".join(parts), model)
+        blocks = _parse_marked_blocks(out, "ANSWER", len(faqs))
+    except Exception as e:  # noqa: BLE001 — singles below are the fallback
+        print(f"    FAQ batch call failed ({e}) — single-item fallback")
+    results = []
+    for i, faq in enumerate(faqs, 1):
+        new_text = None
+        block = blocks.get(i)
+        if block:
+            text = re.sub(r"\s+", " ", _strip(block)).strip()
+            reason = _expansion_rejected(text, service=False,
+                                         original_html="")
+            if reason:
+                print(f"    batch FAQ {i} rejected ({reason}) — "
+                      "single-item fallback")
+            elif gate.words(text) <= faq["words"]:
+                print(f"    batch FAQ {i} did not grow the answer — "
+                      "single-item fallback")
+            else:
+                new_text = text
+        if new_text is None:
+            try:
+                new_text = expand_faq_answer(faq, lo, hi, row, model,
+                                             call)
+            except Exception as e:  # noqa: BLE001 — keep original
+                print(f"    FAQ {i}: fallback call failed ({e})")
+        results.append(new_text)
+    return results
 
 
 def inject_sibling_links(html: str, row: dict,
@@ -809,6 +989,8 @@ def repair_article(html: str, row: dict, siblings: list[dict],
     deficient service sections / FAQ answers → trim backstop if the
     body overshoots the ceiling → top-up if it is still under the
     floor. Every step re-measures with the gate's own counters.
+    Expansion calls are batched and paced (run #14: ~44 unpaced calls
+    all bounced off Groq's per-minute 429 limit).
     """
     metro, town = row["metro_slug"], row["town_slug"]
     html = inject_sibling_links(html, row, siblings)
@@ -819,6 +1001,16 @@ def repair_article(html: str, row: dict, siblings: list[dict],
         print("  repair pass: section alignment mismatch — skipping "
               "splice-based repair (gate will judge the raw draft)")
         return html
+
+    # Pace every repair-pass Groq call a few seconds apart so a
+    # town's calls spread over minutes instead of one second.
+    made = {"n": 0}
+
+    def paced(system: str, user: str, model: str) -> str:
+        if made["n"]:
+            time.sleep(REPAIR_PACE_S)
+        made["n"] += 1
+        return call(system, user, model)
 
     for rnd in (1, 2):
         m = measure_article(html, metro, town)
@@ -834,33 +1026,33 @@ def repair_article(html: str, row: dict, siblings: list[dict],
               f"{len(bad_faqs)} short FAQ answers, total {m['total']} "
               f"(targets: sections {sec_t}, FAQ {faq_t})")
         prefix, segments = split_article(html)
-        for key, s in bad_secs.items():
-            seg = segments[s["index"]]
-            try:
-                new_body = expand_service_section(
-                    seg, sec_t, sec_t + 30, row, model, call)
-            except Exception as e:  # noqa: BLE001 — keep original on failure
-                print(f"    {key}: expansion call failed ({e})")
-                new_body = None
-            if new_body:
-                segments[s["index"]]["body"] = "\n" + new_body + "\n"
-                print(f"    {key}: {s['words']} → "
-                      f"{gate.words(_strip(new_body))} words")
+        sec_items = list(bad_secs.items())
+        for start in range(0, len(sec_items), BATCH_SEC_SIZE):
+            chunk = sec_items[start:start + BATCH_SEC_SIZE]
+            bodies = expand_service_batch(
+                [segments[s["index"]] for _, s in chunk],
+                sec_t, sec_t + 30, row, model, paced)
+            for (key, s), new_body in zip(chunk, bodies):
+                if new_body:
+                    segments[s["index"]]["body"] = "\n" + new_body + "\n"
+                    print(f"    {key}: {s['words']} → "
+                          f"{gate.words(_strip(new_body))} words")
         html = join_article(prefix, segments)
-        for i in bad_faqs:
+        if bad_faqs:
             m_now = measure_article(html, metro, town)
-            if i >= len(m_now["faqs"]):
-                break
-            try:
-                new_text = expand_faq_answer(
-                    m_now["faqs"][i], faq_t, faq_t + 12, row, model, call)
-            except Exception as e:  # noqa: BLE001
-                print(f"    FAQ {i}: expansion call failed ({e})")
-                new_text = None
-            if new_text:
-                html = _replace_faq_answer(html, i, new_text)
-                print(f"    FAQ {i}: {m_now['faqs'][i]['words']} → "
-                      f"{gate.words(new_text)} words")
+            for start in range(0, len(bad_faqs), BATCH_FAQ_SIZE):
+                idxs = [i for i in bad_faqs[start:start + BATCH_FAQ_SIZE]
+                        if i < len(m_now["faqs"])]
+                if not idxs:
+                    continue
+                answers = expand_faq_batch(
+                    [m_now["faqs"][i] for i in idxs],
+                    faq_t, faq_t + 12, row, model, paced)
+                for i, new_text in zip(idxs, answers):
+                    if new_text:
+                        html = _replace_faq_answer(html, i, new_text)
+                        print(f"    FAQ {i}: {m_now['faqs'][i]['words']} "
+                              f"→ {gate.words(new_text)} words")
 
     # Trim backstop: expansions overshot the body ceiling.
     html = _enforce_ceiling(html, metro, town)
@@ -878,7 +1070,7 @@ def repair_article(html: str, row: dict, siblings: list[dict],
             seg = segments[s["index"]]
             try:
                 new_body = expand_service_section(
-                    seg, 300, 350, row, model, call)
+                    seg, 300, 350, row, model, paced)
             except Exception as e:  # noqa: BLE001
                 print(f"    {key}: top-up call failed ({e})")
                 new_body = None
