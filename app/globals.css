@@ -18,6 +18,27 @@ body {
   color: #172554;
 }
 
+/* ---------- Homepage town marquee ---------- */
+@keyframes town-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.town-marquee-track {
+  animation: town-marquee 110s linear infinite;
+}
+.town-marquee:hover .town-marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .town-marquee-track {
+    animation: none;
+  }
+}
+
 /* ---------- Generated article HTML (Grok output) ---------- */
 .article-body {
   color: #334155;
