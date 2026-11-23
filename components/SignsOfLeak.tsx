@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Eyebrow from "@/components/Eyebrow";
 
 /**
  * Homepage "signs of a leak" infographic — six common signs, each with a
@@ -43,9 +44,7 @@ const SIGNS: Array<{ title: string; means: string; icon: string }> = [
 export default function SignsOfLeak() {
   return (
     <section aria-label="Signs you may have a hidden leak" className="mx-auto max-w-6xl px-4 py-16">
-      <p className="text-center text-xs font-bold uppercase tracking-[0.25em] text-blue-700">
-        Know the signs
-      </p>
+      <Eyebrow center>Know the clues</Eyebrow>
       <h2 className="mt-3 text-center text-3xl font-extrabold tracking-tight text-blue-950">
         6 signs you may have a hidden leak
       </h2>
@@ -59,7 +58,7 @@ export default function SignsOfLeak() {
             key={s.title}
             className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-7 w-7" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
               </svg>

@@ -11,6 +11,7 @@ import SignsOfLeak from "@/components/SignsOfLeak";
 import CostChart from "@/components/CostChart";
 import ToolsShowcase from "@/components/ToolsShowcase";
 import TownMarquee from "@/components/TownMarquee";
+import Eyebrow from "@/components/Eyebrow";
 
 const METROS = [
   { slug: "houston", label: "Houston" },
@@ -62,9 +63,9 @@ const NICHE_ICONS: Record<string, string> = {
   "Pool, Water Heater & Yard": "M2 16c2 0 2-1.5 4-1.5S8 16 10 16s2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5M7 11V6a2 2 0 014 0M2 20h20",
 };
 
-function CheckIcon() {
+function CheckIcon({ className = "h-5 w-5 text-teal-600" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-5 w-5 text-amber-500" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className={className} aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
     </svg>
   );
@@ -99,11 +100,11 @@ export default function Home() {
         />
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 md:py-24 lg:grid-cols-2">
           <div className="text-center lg:text-left">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400">
-              Hyper-Local Leak Detection Guides · USA
-            </p>
-            <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-white md:text-6xl">
-              Find the Leak. <span className="text-amber-400">Fix It Right.</span>
+            <Eyebrow tone="dark" className="justify-center lg:justify-start">
+              A clearer start for Texas homeowners
+            </Eyebrow>
+            <h1 className="mt-5 text-5xl font-extrabold leading-[1.04] tracking-tight text-white md:text-7xl">
+              Find the Leak. <span className="text-teal-300">Fix It Right.</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-blue-100 lg:mx-0">
               Every town gets its own researched guide — real soil, housing
@@ -145,22 +146,57 @@ export default function Home() {
             <ul className="mt-10 flex flex-col items-center gap-3 text-sm font-semibold text-blue-100 sm:flex-row sm:gap-8 lg:justify-start sm:justify-center">
               {["100 towns researched", "Real local data", "Published pricing"].map((t) => (
                 <li key={t} className="flex items-center gap-2">
-                  <CheckIcon /> {t}
+                  <CheckIcon className="h-5 w-5 text-teal-300" /> {t}
                 </li>
               ))}
             </ul>
           </div>
           <figure className="mx-auto w-full max-w-xl lg:mx-0">
-            <img
-              src="/images/hero-1.jpg"
-              alt="Plumber at work on pipework (illustrative photo)"
-              width={1600}
-              height={1060}
-              className="aspect-[3/2] w-full rounded-3xl border border-blue-800 object-cover shadow-2xl"
-            />
-            <figcaption className="mt-3 text-center text-xs text-blue-300 lg:text-left">
-              Plumber at work on pipework (illustrative photo) · Photo: AR
-              Abnoy via Pexels
+            <div className="relative">
+              {/* sonar-ring decoration at the photo's top-right corner */}
+              <div className="pointer-events-none absolute -top-9 -right-9 z-10" aria-hidden="true">
+                <span className="block h-24 w-24 rounded-full border border-teal-300/25" />
+                <span className="absolute inset-0 m-auto block h-16 w-16 rounded-full border border-teal-300/40" />
+                <span className="absolute inset-0 m-auto block h-8 w-8 rounded-full border border-teal-300/60" />
+              </div>
+              <img
+                src="/images/hero-1.jpg"
+                alt="Plumber at work on pipework (illustrative photo)"
+                width={1600}
+                height={1060}
+                className="aspect-[3/2] w-full rounded-3xl border border-blue-800 object-cover shadow-2xl"
+              />
+              {/* dashed pipe-trace line across the photo's lower area */}
+              <svg
+                viewBox="0 0 600 64"
+                preserveAspectRatio="none"
+                className="pointer-events-none absolute inset-x-5 bottom-5 h-12 w-[calc(100%-2.5rem)] text-teal-300/90"
+                aria-hidden="true"
+              >
+                <path
+                  d="M2 48 H170 L205 18 H385 L420 48 H598"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  strokeDasharray="8 7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="205" cy="18" r="4.5" fill="currentColor" />
+                <circle cx="420" cy="48" r="4.5" fill="currentColor" />
+              </svg>
+            </div>
+            <figcaption className="mt-3 flex items-baseline justify-between gap-4 text-left">
+              <span className="text-xs text-blue-300">
+                Plumber at work on pipework (illustrative photo) · Photo: AR
+                Abnoy via Pexels
+              </span>
+              <a
+                href="#how"
+                className="shrink-0 text-xs font-bold text-teal-300 transition hover:text-teal-200 hover:underline"
+              >
+                How detection works →
+              </a>
             </figcaption>
           </figure>
         </div>
@@ -187,21 +223,20 @@ export default function Home() {
 
       {/* HOW IT WORKS */}
       <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
-        <h2 className="text-center text-3xl font-extrabold tracking-tight text-blue-950">How it works</h2>
+        <Eyebrow center>A practical order</Eyebrow>
+        <h2 className="mt-3 text-center text-3xl font-extrabold tracking-tight text-blue-950">How it works</h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
           Three steps between you and a found leak — no destructive digging to "see what's wrong."
         </p>
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
           {[
-            { n: "1", t: "Pick your town", d: "Open your town's guide — written for its soil, housing stock and water systems, not generic nationwide advice." },
-            { n: "2", t: "Know your leak", d: "Match your symptoms to the guide: slab, sewer, gas, pool or yard line. See typical local prices before you call anyone." },
-            { n: "3", t: "Call for detection", d: "One call connects you with local detection pros using acoustic, thermal and camera equipment — pinpoint, not guesswork." },
+            { n: "01", t: "Pick your town", d: "Open your town's guide — written for its soil, housing stock and water systems, not generic nationwide advice." },
+            { n: "02", t: "Know your leak", d: "Match your symptoms to the guide: slab, sewer, gas, pool or yard line. See typical local prices before you call anyone." },
+            { n: "03", t: "Call for detection", d: "One call connects you with local detection pros using acoustic, thermal and camera equipment — pinpoint, not guesswork." },
           ].map((s) => (
-            <div key={s.n} className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-800 text-lg font-extrabold text-amber-400">
-                {s.n}
-              </span>
-              <h3 className="mt-4 text-lg font-bold text-blue-950">{s.t}</h3>
+            <div key={s.n} className="border-t-2 border-slate-300 pt-6">
+              <p className="text-sm font-extrabold tracking-[0.25em] text-teal-600">{s.n}</p>
+              <h3 className="mt-3 text-lg font-bold text-blue-950">{s.t}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">{s.d}</p>
             </div>
           ))}
@@ -211,7 +246,8 @@ export default function Home() {
       {/* SERVICES */}
       <section id="services" className="scroll-mt-20 bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="text-center text-3xl font-extrabold tracking-tight text-blue-950">
+          <Eyebrow center>What needs checking?</Eyebrow>
+          <h2 className="mt-3 text-center text-3xl font-extrabold tracking-tight text-blue-950">
             10 leak detection services, 4 specialties
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
@@ -219,9 +255,9 @@ export default function Home() {
           </p>
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             {SUB_NICHES.map((niche) => (
-              <div key={niche} className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div key={niche} className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-800">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-6 w-6" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d={NICHE_ICONS[niche] ?? NICHE_ICONS["Slab & Underground"]} />
                     </svg>
@@ -252,7 +288,8 @@ export default function Home() {
 
       {/* SERVICE AREAS */}
       <section id="areas" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
-        <h2 className="text-center text-3xl font-extrabold tracking-tight text-blue-950">Service areas</h2>
+        <Eyebrow center>Texas launch region</Eyebrow>
+        <h2 className="mt-3 text-center text-3xl font-extrabold tracking-tight text-blue-950">Service areas</h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-slate-600">
           Live now: 10 Texas metros, 100 towns — more states coming as each guide meets our research bar.
         </p>
@@ -260,7 +297,7 @@ export default function Home() {
           {METROS.map((m) => {
             const shot = metroPhoto(m.slug);
             return (
-              <div key={m.slug} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+              <div key={m.slug} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 {shot ? (
                   <figure>
                     <img
@@ -327,7 +364,7 @@ export default function Home() {
             </p>
             <a
               href={`tel:${PHONE_TEL}`}
-              className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-amber-500 px-5 py-2.5 text-sm font-extrabold text-blue-950 transition hover:bg-amber-400"
+              className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-extrabold text-blue-950 transition hover:bg-sky-100"
             >
               <PhoneIcon className="h-4 w-4" /> Ask about your area
             </a>
@@ -338,7 +375,12 @@ export default function Home() {
       {/* TOWN MARQUEE */}
       <TownMarquee />
 
-      <CtaBand />
+      <CtaBand
+        title="Not sure it's a leak? Run the 2-minute meter test."
+        subtitle="Take a meter reading tonight and another in the morning. If the dial moved while every tap was off, water is escaping somewhere — two readings turn a suspicion into a number."
+        href="/tx/houston/katy/#meter-test"
+        ctaLabel="Start the meter test"
+      />
     </>
   );
 }

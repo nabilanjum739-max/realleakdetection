@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/site";
 
 function PhoneIcon({ className = "h-5 w-5" }: { className?: string }) {
@@ -11,12 +12,18 @@ function PhoneIcon({ className = "h-5 w-5" }: { className?: string }) {
 interface CtaBandProps {
   title?: string;
   subtitle?: string;
+  /** When set, the amber button links here (with ctaLabel) instead of tel:. */
+  href?: string;
+  ctaLabel?: string;
 }
 
-/** Reusable conversion band — blue panel, amber call CTA. */
+/** Reusable conversion band — blue panel, amber CTA (phone by default,
+ *  or a link CTA when href is passed, e.g. the homepage meter-test band). */
 export default function CtaBand({
   title = "Suspect a leak? Don't wait for the damage.",
   subtitle = "Water damage gets more expensive every day. Non-invasive detection pinpoints the leak without exploratory digging — published pricing, so you can compare local pros before you call.",
+  href,
+  ctaLabel,
 }: CtaBandProps) {
   return (
     <section className="mx-auto max-w-6xl px-4 py-14" aria-label="Call to action">
@@ -34,14 +41,29 @@ export default function CtaBand({
             {title}
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-blue-100">{subtitle}</p>
-          <a
-            href={`tel:${PHONE_TEL}`}
-            className="mt-8 inline-flex items-center gap-3 rounded-full bg-amber-500 px-8 py-4 text-lg font-extrabold text-blue-950 shadow-lg transition hover:bg-amber-400"
-          >
-            <PhoneIcon />
-            Call {PHONE_DISPLAY}
-          </a>
-          <p className="mt-4 text-sm text-blue-200">Tap to call — talk to a local leak detection pro</p>
+          {href ? (
+            <>
+              <Link
+                href={href}
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-amber-500 px-8 py-4 text-lg font-extrabold text-blue-950 shadow-lg transition hover:bg-amber-400"
+              >
+                {ctaLabel ?? "Start now"}
+                <span aria-hidden="true">→</span>
+              </Link>
+              <p className="mt-4 text-sm text-blue-200">Free tool — no signup</p>
+            </>
+          ) : (
+            <>
+              <a
+                href={`tel:${PHONE_TEL}`}
+                className="mt-8 inline-flex items-center gap-3 rounded-full bg-amber-500 px-8 py-4 text-lg font-extrabold text-blue-950 shadow-lg transition hover:bg-amber-400"
+              >
+                <PhoneIcon />
+                Call {PHONE_DISPLAY}
+              </a>
+              <p className="mt-4 text-sm text-blue-200">Tap to call — talk to a local leak detection pro</p>
+            </>
+          )}
         </div>
       </div>
     </section>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TOWN_PRICES } from "@/lib/town-prices";
+import Eyebrow from "@/components/Eyebrow";
 
 /**
  * Homepage cost chart — hand-built SVG range bars showing the typical
@@ -44,7 +45,8 @@ export default function CostChart() {
 
   return (
     <section aria-label="Leak detection costs by metro" className="mx-auto max-w-6xl px-4 py-16">
-      <h2 className="text-center text-3xl font-extrabold tracking-tight text-blue-950">
+      <Eyebrow center>Plan before you call</Eyebrow>
+      <h2 className="mt-3 text-center text-3xl font-extrabold tracking-tight text-blue-950">
         What leak detection costs in Texas
       </h2>
       <p className="mx-auto mt-3 max-w-2xl text-center text-slate-600">

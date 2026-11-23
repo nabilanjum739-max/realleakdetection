@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cacheLife } from "next/cache";
 import { getSupabase } from "@/lib/supabase";
+import Eyebrow from "@/components/Eyebrow";
 
 function PinIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
@@ -168,9 +169,7 @@ export default async function UsaStats() {
   return (
     <section className="bg-slate-50" aria-label="Coverage data">
       <div className="mx-auto max-w-6xl px-4 py-16">
-        <p className="text-center text-xs font-bold uppercase tracking-[0.25em] text-blue-700">
-          Phase 1 · Texas — expanding nationwide
-        </p>
+        <Eyebrow center>Phase 1 · Texas — expanding nationwide</Eyebrow>
         <h2 className="mt-3 text-center text-3xl font-extrabold tracking-tight text-blue-950">
           The USA by the numbers
         </h2>

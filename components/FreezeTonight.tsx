@@ -82,7 +82,7 @@ export default function FreezeTonight() {
               </p>
               <Link
                 href="/tools/freeze-risk-tonight/"
-                className="mt-6 inline-flex items-center rounded-full bg-amber-500 px-6 py-3 text-sm font-extrabold text-blue-950 transition hover:bg-amber-400"
+                className="mt-6 inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-extrabold text-blue-950 transition hover:bg-sky-100"
               >
                 Check your town&apos;s risk →
               </Link>

@@ -14,14 +14,27 @@ const METROS = [
 // Build-time constant (calling new Date() during prerender is blocked in Next 16).
 const YEAR = new Date().getFullYear();
 
-/** Site footer — dark blue, metro link tree, honesty note. */
+function DropletIcon({ className = "h-6 w-6" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12 2s6.5 7.1 6.5 12.3c0 3.6-2.9 6.5-6.5 6.5s-6.5-2.9-6.5-6.5C5.5 9.1 12 2 12 2zm0 17.6c2 0 3.6-1.6 3.6-3.6 0-1.5-1.2-3.3-3.6-6-2.4 2.7-3.6 4.5-3.6 6 0 2 1.6 3.6 3.6 3.6z" />
+    </svg>
+  );
+}
+
+/** Site footer — dark navy, metro link tree, honesty note. */
 export default function Footer() {
   return (
     <footer className="bg-blue-950 text-blue-100">
       <div className="mx-auto max-w-6xl px-4 py-14">
         <div className="flex flex-col justify-between gap-8 md:flex-row">
           <div className="max-w-sm">
-            <p className="text-xl font-extrabold text-white">{BRAND}</p>
+            <p className="flex items-center gap-2.5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-teal-300">
+                <DropletIcon />
+              </span>
+              <span className="text-xl font-extrabold text-white">{BRAND}</span>
+            </p>
             <p className="mt-3 text-sm leading-6 text-blue-200">
               Hyper-local leak detection guides for towns across America —
               slab, sewer, gas, pool and more. Every guide is written from
@@ -39,8 +52,8 @@ export default function Footer() {
           <nav className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-6" aria-label="Footer">
             {METROS.map((m) => (
               <div key={m.slug}>
-                <p className="text-sm font-bold uppercase tracking-wider text-amber-400">
-                  <Link href={`/tx/${m.slug}/`} className="hover:text-amber-300">{m.label}</Link>
+                <p className="text-sm font-bold uppercase tracking-wider text-white">
+                  <Link href={`/tx/${m.slug}/`} className="hover:text-teal-300">{m.label}</Link>
                 </p>
                 <ul className="mt-3 space-y-2 text-sm">
                   {TOWNS.filter((t) => t.metroSlug === m.slug).slice(0, 5).map((t) => (
@@ -59,7 +72,7 @@ export default function Footer() {
               </div>
             ))}
             <div>
-              <p className="text-sm font-bold uppercase tracking-wider text-amber-400">Services</p>
+              <p className="text-sm font-bold uppercase tracking-wider text-white">Services</p>
               <ul className="mt-3 space-y-2 text-sm">
                 {SERVICES.slice(0, 5).map((s) => (
                   <li key={s.slug}>
@@ -78,7 +91,7 @@ export default function Footer() {
           </nav>
         </div>
 
-        <div className="mt-12 border-t border-blue-900 pt-6 text-xs leading-5 text-blue-300">
+        <div className="mt-12 border-t border-white/10 pt-6 text-xs leading-5 text-blue-300">
           <p>
             Detection-only guides. We document how leaks are found — you choose
             who fixes them. Pricing shown is typical for the metro area, not a
