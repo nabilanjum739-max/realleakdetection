@@ -1364,12 +1364,16 @@ def inject_pillar_links(html: str, row: dict) -> str:
 
 
 def _trim_section_body(body: str, target_words: int,
-                       floor: int = 0) -> str:
+                       floor: int = 0, allow_pillar: bool = False) -> str:
     """Drop trailing <p> blocks until the body fits (never tables, never
     a block containing '911', never the injected nearby-guides or
-    pillar-more paragraphs, never a paragraph carrying a /services/
-    pillar link, always keep at least one paragraph, and never drop a
-    paragraph that would take the body under `floor`)."""
+    pillar-more paragraphs, always keep at least one paragraph, and
+    never drop a paragraph that would take the body under `floor`).
+    Paragraphs carrying a /services/ pillar link are protected too,
+    unless `allow_pillar` — set by the ceiling when the article holds
+    enough distinct pillar links (≥7) that losing one anchor still
+    leaves the gate's ≥4 with margin (run #18: protected paragraphs
+    were one reason the ceiling stalled at 4,375 words)."""
     while gate.words(_strip(body)) > target_words:
         paras = list(re.finditer(r"<p\b[^>]*>.*?</p>", body,
                                  re.DOTALL | re.I))
@@ -1377,7 +1381,8 @@ def _trim_section_body(body: str, target_words: int,
                      if "911" not in _strip(m.group(0))
                      and "nearby-guides" not in m.group(0)
                      and "pillar-more" not in m.group(0)
-                     and 'href="/services/' not in m.group(0)]
+                     and (allow_pillar
+                          or 'href="/services/' not in m.group(0))]
         if len(paras) <= 1 or not removable:
             break
         m = removable[-1]
@@ -1447,14 +1452,22 @@ def _budgeted_targets(m: dict) -> tuple[int, int]:
 def _enforce_ceiling(html: str, metro: str, town: str) -> str:
     """Trim backstop: bring the body under TOTAL_SOFT_MAX by removing
     words, in order: longest service section (paragraph drops, floor
-    ~202), longest FAQ answer (sentence trims, floor ~51), then the
-    longest other section's paragraphs (floor ~45). The gate's ceiling
-    is never a reason to fail if words can come out — but no trim may
-    push an item under its own gate floor.
+    ~202), longest FAQ answer (sentence trims, floor ~51), the longest
+    other section's paragraphs and the article prefix (floor ~45),
+    word-level micro-trims, and finally raw sentence cuts inside
+    markup-bearing paragraphs. The gate's ceiling is never a reason
+    to fail if words can come out — but no trim may push an item
+    under its own gate floor. Run #18 stalled at 4,375 with every
+    item in range: the tiers that existed could not touch protected
+    or single-paragraph content and the prefix, so tiers 3/5 now
+    cover both, pillar paragraphs unlock when ≥7 distinct pillar
+    links are present, and a stall prints the full size breakdown so
+    the log explains itself.
     """
     m = measure_article(html, metro, town)
+    start_total = m["total"]
     guard = 0
-    while m["total"] > TOTAL_SOFT_MAX and guard < 60:
+    while m["total"] > TOTAL_SOFT_MAX and guard < 200:
         guard += 1
         excess = m["total"] - 4030
         prefix, segments = split_article(html)
@@ -1467,7 +1480,8 @@ def _enforce_ceiling(html: str, metro: str, town: str) -> str:
         for _, key, idx in long_secs:
             target = max(202, m["services"][key]["words"] - excess - 5)
             new_body = _trim_section_body(
-                segments[idx]["body"], target, floor=201)
+                segments[idx]["body"], target, floor=201,
+                allow_pillar=len(m["pillars"]) >= 7)
             if new_body != segments[idx]["body"]:
                 segments[idx]["body"] = new_body
                 html = join_article(prefix, segments)
@@ -1490,12 +1504,22 @@ def _enforce_ceiling(html: str, metro: str, town: str) -> str:
                     html = new_html
                     changed = True
                     break
-        # Tier 3: longest other sections (never the FAQ segment).
+        # Tier 3: the article prefix first (intro before the first
+        # H2 — no other tier can touch it), then the longest other
+        # sections (never the FAQ segment).
+        if not changed and gate.words(_strip(prefix)) > 60:
+            pw = gate.words(_strip(prefix))
+            new_prefix = _trim_section_body(
+                prefix, max(45, pw - excess - 5), floor=44)
+            if new_prefix != prefix:
+                html = join_article(new_prefix, segments)
+                changed = True
         if not changed:
             service_idx = {s["index"] for s in m["services"].values()}
             others = []
             for i, seg in enumerate(segments):
-                if i in service_idx or 'class="faq"' in seg["body"]:
+                if i in service_idx or 'class="faq"' in seg["body"] \
+                        or "<h3" in seg["body"]:
                     continue
                 w = gate.words(_strip(seg["body"]))
                 if w > 60:
@@ -1558,9 +1582,85 @@ def _enforce_ceiling(html: str, metro: str, town: str) -> str:
                 html = join_article(prefix, segments)
                 changed = True
                 break
+        # Tier 5 (run #18): raw sentence cut — drop the LAST sentence
+        # of a trailing paragraph in the longest segment. Fires only
+        # when every drop/trim above stalls (single-paragraph
+        # sections, markup-bearing or pillar-carrying paragraphs).
+        # A cut is accepted only when the dropped tail is tag-free,
+        # the kept head has balanced angle brackets and balanced
+        # inline tags, the paragraph keeps ≥15 words, and the
+        # segment stays above its floor (service 205, other 50).
+        if not changed:
+            service_idx = {s["index"] for s in m["services"].values()}
+            cands = []
+            for i, seg in enumerate(segments):
+                if 'class="faq"' in seg["body"] or "<h3" in seg["body"]:
+                    continue
+                if i in service_idx:
+                    key = next(k for k, s in m["services"].items()
+                               if s["index"] == i)
+                    cands.append((m["services"][key]["words"], i, 205))
+                else:
+                    cands.append((gate.words(_strip(seg["body"])), i, 50))
+            for w, idx, floor in sorted(cands, reverse=True):
+                body = segments[idx]["body"]
+                paras = list(re.finditer(r"(<p\b[^>]*>)(.*?)(</p>)",
+                                         body, re.DOTALL | re.I))
+                applied = False
+                for pm in reversed(paras):
+                    inner = pm.group(2)
+                    if ("911" in _strip(inner)
+                            or "nearby-guides" in pm.group(0)
+                            or "pillar-more" in pm.group(0)):
+                        continue
+                    cut_head = None
+                    for sm in re.finditer(r"[.!?]\s+", inner):
+                        tail = inner[sm.end():]
+                        if "<" in tail:
+                            continue
+                        head = inner[:sm.start() + 1]
+                        if head.count("<") != head.count(">"):
+                            continue
+                        if any(head.count(f"<{t}") != head.count(f"</{t}>")
+                               for t in ("strong", "em", "a", "b", "i",
+                                         "span")):
+                            continue
+                        if gate.words(_strip(head)) < 15:
+                            continue
+                        cut_head = (head, tail)
+                    if cut_head is None:
+                        continue
+                    head, tail = cut_head
+                    saved = gate.words(_strip(tail))
+                    if saved <= 0 or w - saved < floor:
+                        continue
+                    segments[idx]["body"] = (
+                        body[:pm.start()] + pm.group(1) + head
+                        + pm.group(3) + body[pm.end():])
+                    html = join_article(prefix, segments)
+                    changed = True
+                    applied = True
+                    break
+                if applied:
+                    break
         if not changed:
             break
         m = measure_article(html, metro, town)
+    if m["total"] > TOTAL_SOFT_MAX:
+        prefix, segments = split_article(html)
+        others = {i: gate.words(_strip(s["body"]))
+                  for i, s in enumerate(segments)
+                  if i not in {v["index"] for v in m["services"].values()}
+                  and 'class="faq"' not in s["body"]
+                  and "<h3" not in s["body"]}
+        print(f"    ceiling STALLED at {m['total']} words "
+              f"(soft max {TOTAL_SOFT_MAX}): prefix "
+              f"{gate.words(_strip(prefix))}, services "
+              f"{ {k: s['words'] for k, s in m['services'].items()} }, "
+              f"faq answers {[f['words'] for f in m['faqs']]}, "
+              f"others {others}, pillars {len(m['pillars'])}")
+    elif start_total > TOTAL_SOFT_MAX:
+        print(f"    ceiling: trimmed {start_total} → {m['total']} words")
     return html
 
 
@@ -1866,11 +1966,18 @@ def _print_final_verdict(m: dict) -> None:
         deficient.append(
             f"5b — cost question: {m['has_cost']}, insurance "
             f"question: {m['has_insurance']}")
+    if not BODY_FLOOR <= m["total"] <= BODY_CEIL:
+        deficient.append(
+            f"12 — body {m['total']} words (gate "
+            f"{BODY_FLOOR}–{BODY_CEIL})")
     for line in deficient:
         print(f"  final self-measurement: STILL DEFICIENT — {line}")
     if not deficient:
         print("  final self-measurement: every sweep check in gate "
               "range")
+    else:
+        print(f"  final self-measurement: body {m['total']} words "
+              f"(gate {BODY_FLOOR}–{BODY_CEIL})")
 
 
 def repair_article(html: str, row: dict, siblings: list[dict],
