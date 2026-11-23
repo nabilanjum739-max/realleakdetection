@@ -1,26 +1,40 @@
 # ============================================================
 # Supabase keep-alive — free-tier projects auto-pause after
 # ~1 week of inactivity. This pings the towns table with a
-# real (tiny) query twice a week so the project stays awake.
+# real (tiny) query EVERY DAY so the project never gets
+# close to the inactivity limit, with retries so one bad
+# run can't open a gap. (Was Mon+Thu until Nov 22, 2026;
+# upgraded to daily at Nabil's request.)
 # Uses existing repo secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY
 # ============================================================
 name: supabase-keep-alive
 
 on:
   schedule:
-    - cron: "17 6 * * 1,4" # Mon + Thu 06:17 UTC
+    - cron: "17 6 * * *" # daily 06:17 UTC
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase (1-row select)
+      - name: Ping Supabase (1-row select, 3 attempts)
         run: |
-          code=$(curl -s -o /tmp/out.json -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/towns?select=town&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}")
-          echo "HTTP $code"
-          head -c 300 /tmp/out.json; echo
-          test "$code" = "200"
+          for attempt in 1 2 3; do
+            code=$(curl -s -o /tmp/out.json -w "%{http_code}" \
+              "${{ secrets.SUPABASE_URL }}/rest/v1/towns?select=town&limit=1" \
+              -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}")
+            echo "attempt $attempt: HTTP $code"
+            head -c 300 /tmp/out.json; echo
+            if [ "$code" = "200" ]; then
+              echo "Supabase is awake."
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "retrying in 120s..."
+              sleep 120
+            fi
+          done
+          echo "Supabase did not answer 200 after 3 attempts"
+          exit 1
