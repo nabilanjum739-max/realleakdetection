@@ -442,6 +442,20 @@ def call_llm(system: str, user: str, model: str) -> dict:
 # (first natural mention of each service's name inside its own
 # section, wrapped in an anchor; a short "More on …" line when a
 # section never names itself).
+#
+# Run #17 proved the batched rounds work (FAQ count 13 ✓, pillar
+# links 10 ✓, body 4,055 ✓, 14/17 checks) but the loop still stopped
+# after its fixed 2 rounds with items it could measure as deficient:
+# one section (sewer camera) stuck at 124 words, one FAQ answer at
+# 38, and no cost question the gate's 5b detection recognises. The
+# pass therefore ends with a gate-aligned FINAL SWEEP: a bounded
+# fix-measure loop (max 4 iterations, only while the previous
+# iteration changed something) that keeps applying targeted fixes —
+# per-item retries with the rejection reason fed back, a $-strip
+# fallback for price-heavy service sections, and a 5b topic top-up
+# whose cost answer may use only the row's researched range — until
+# every item it can measure is in gate range, then logs a final
+# self-measurement verdict in the gate's own FAIL-line format.
 # =====================================================================
 import validate as gate  # same directory; gate logic is the source of truth
 
@@ -451,6 +465,13 @@ FAQ_COUNT_FLOOR = 12               # gate check 5: 12–15 Q&As
 FAQ_COUNT_TARGET = 13              # prompt demands exactly 13; the
                                    # repair top-up aims here so one
                                    # malformed Q&A can't sink the page
+FAQ_COUNT_MAX = 15                 # gate check 5 ceiling
+# Gate check 5b keyword lists, verbatim from validate.py: the gate
+# scans the FAQ *questions* (lowercased, joined) for these substrings.
+COST_QUESTION_KEYS = ("cost", "price", "how much", "charge")
+INSURANCE_QUESTION_KEYS = ("insurance", "claim", "covered")
+SWEEP_MAX_ITERS = 4                # final-sweep fix-measure bound
+SWEEP_ITEM_ATTEMPTS = 3            # dedicated attempts per deficient item
 BODY_FLOOR, BODY_CEIL = gate.BODY_MIN, gate.BODY_MAX   # gate check 12
 TOTAL_AIM = 3900                   # land mid-band, not on an edge
 TOTAL_SOFT_MAX = 4050              # trim backstop engages above this
@@ -539,11 +560,17 @@ def measure_article(html: str, metro: str, town: str) -> dict:
         m = re.search(r"/tx/([a-z0-9-]+)/([a-z0-9-]+)/?$", h)
         if m and m.group(1) == metro and m.group(2) != town:
             sibs.add(m.group(2))
+    faqs = [{"q": q, "words": gate.words(a)}
+            for q, a in parser.faq_qas]
+    # Gate check 5b, verbatim: topic presence across the questions.
+    questions = " ".join(f["q"].lower() for f in faqs)
     return {
         "total": gate.words(_strip(html)),
         "services": services,
-        "faqs": [{"q": q, "words": gate.words(a)}
-                 for q, a in parser.faq_qas],
+        "faqs": faqs,
+        "has_cost": any(k in questions for k in COST_QUESTION_KEYS),
+        "has_insurance": any(k in questions
+                             for k in INSURANCE_QUESTION_KEYS),
         "siblings": sibs,
         "pillars": _pillar_slugs_in(html),
         "aligned": aligned,
@@ -629,9 +656,45 @@ def _grounding_json(row: dict) -> str:
     return json.dumps(data, indent=2)
 
 
-def expand_service_section(seg: dict, lo: int, hi: int, row: dict,
-                           model: str, call) -> str | None:
-    """One focused expansion call for a service section body."""
+def _strip_dollar_sentences(html: str) -> str:
+    """Remove sentences containing a $ figure from HTML paragraphs.
+
+    Fallback for service-section expansions rejected ONLY for
+    introducing a $ range: pricing belongs in the N5 table, so the
+    price sentences can come out and the explanatory text stays.
+    Paragraphs left empty are dropped; non-paragraph blocks (the gas
+    safety box) are returned untouched. Never used on FAQ answers —
+    prices are legitimate there.
+    """
+    def clean(block: str) -> str:
+        m = re.match(r"(<p\b[^>]*>)(.*)(</p>)\s*$", block,
+                     re.DOTALL | re.I)
+        if not m:
+            return block
+        sentences = re.split(r"(?<=[.!?])\s+", m.group(2))
+        kept = [s for s in sentences if "$" not in s]
+        if len(kept) == len(sentences):
+            return block
+        inner = " ".join(kept).strip()
+        return m.group(1) + inner + m.group(3) if inner else ""
+
+    return re.sub(r"<p\b[^>]*>.*?</p>",
+                  lambda mm: clean(mm.group(0)), html,
+                  flags=re.DOTALL | re.I)
+
+
+def _expand_service_section(seg: dict, lo: int, hi: int, row: dict,
+                            model: str, call,
+                            hint: str | None = None
+                            ) -> tuple[str | None, str | None]:
+    """One focused expansion call for a service section body.
+
+    Returns (new_body, None) on success or (None, reason) on any
+    failure — guard rejection (with the guard's reason), call failure,
+    or a $-strip fallback that still doesn't land. `hint` (the sweep
+    passes the measured deficiency / last rejection reason) is
+    appended as a REPAIR NOTE so the model knows exactly what to fix.
+    """
     user = (
         f"TOWN DATA — the only source of local facts:\n"
         f"{_grounding_json(row)}\n\n"
@@ -643,18 +706,57 @@ def expand_service_section(seg: dict, lo: int, hi: int, row: dict,
         f"above. Keep the same HTML structure (paragraphs, any safety "
         f"box first). Return ONLY the expanded body HTML — no heading, "
         f"no markdown fences.")
-    out = call(EXPAND_SYSTEM, user, model)
+    if hint:
+        user += f"\n\nREPAIR NOTE: {hint}"
+    try:
+        out = call(EXPAND_SYSTEM, user, model)
+    except Exception as e:  # noqa: BLE001 — reason returned to caller
+        print(f"    section expansion call failed ({e})")
+        return None, f"call failure: {e}"
     reason = _expansion_rejected(out, service=True,
                                  original_html=seg["body"])
+    if reason == "introduces a $ range into a service section":
+        # Likely a price-heavy section (sewer camera): the model keeps
+        # inserting the researched price. Strip the $ sentences and
+        # re-run every guard on what remains.
+        stripped = _strip_dollar_sentences(out)
+        reason2 = _expansion_rejected(stripped, service=True,
+                                      original_html=seg["body"])
+        w = gate.words(_strip(stripped))
+        if reason2 is None and SEC_MIN <= w <= SEC_MAX:
+            print(f"    $-strip fallback: removed the $ sentences — "
+                  f"{w} words, accepted")
+            return _ensure_gas_safety(seg["body"], stripped), None
+        reason = (f"$ range introduced; $-strip still rejected "
+                  f"({reason2})" if reason2 else
+                  f"$ range introduced; $-stripped text landed at "
+                  f"{w} words (need {SEC_MIN}–{SEC_MAX})")
     if reason:
         print(f"    expansion rejected ({reason})")
-        return None
-    return _ensure_gas_safety(seg["body"], out)
+        return None, reason
+    return _ensure_gas_safety(seg["body"], out), None
 
 
-def expand_faq_answer(faq: dict, lo: int, hi: int, row: dict,
-                      model: str, call) -> str | None:
-    """One focused expansion call for a single FAQ answer (plain text)."""
+def expand_service_section(seg: dict, lo: int, hi: int, row: dict,
+                           model: str, call) -> str | None:
+    """One focused expansion call for a service section body."""
+    body, _reason = _expand_service_section(seg, lo, hi, row, model,
+                                            call)
+    return body
+
+
+def _expand_faq_answer(faq: dict, lo: int, hi: int, row: dict,
+                       model: str, call,
+                       hint: str | None = None
+                       ) -> tuple[str | None, str | None]:
+    """One focused expansion call for a single FAQ answer.
+
+    Returns (new_text, None) on success or (None, reason) — same
+    contract as _expand_service_section. The candidate must be
+    guard-clean AND longer than the current answer; landing in the
+    gate's 50–80 range is the caller's check (the sweep retries with
+    the landed length as the next hint).
+    """
     user = (
         f"TOWN DATA — the only source of local facts:\n"
         f"{_grounding_json(row)}\n\n"
@@ -664,16 +766,31 @@ def expand_faq_answer(faq: dict, lo: int, hi: int, row: dict,
         f"the first sentence, then add the reasoning and one concrete "
         f"action the homeowner can take. Use only the data above. "
         f"Return ONLY the answer text.")
-    out = _strip(call(EXPAND_SYSTEM, user, model)).strip()
-    out = re.sub(r"\s+", " ", out)
+    if hint:
+        user += f"\n\nREPAIR NOTE: {hint}"
+    try:
+        out = call(EXPAND_SYSTEM, user, model)
+    except Exception as e:  # noqa: BLE001 — reason returned to caller
+        print(f"    FAQ expansion call failed ({e})")
+        return None, f"call failure: {e}"
+    out = re.sub(r"\s+", " ", _strip(out)).strip()
     reason = _expansion_rejected(out, service=False, original_html="")
     if reason:
         print(f"    FAQ expansion rejected ({reason})")
-        return None
+        return None, reason
     if gate.words(out) <= faq["words"]:
         print("    FAQ expansion did not grow the answer")
-        return None
-    return out
+        return None, (f"did not grow the answer "
+                      f"({gate.words(out)} words, current "
+                      f"{faq['words']})")
+    return out, None
+
+
+def expand_faq_answer(faq: dict, lo: int, hi: int, row: dict,
+                      model: str, call) -> str | None:
+    """One focused expansion call for a single FAQ answer (plain text)."""
+    text, _reason = _expand_faq_answer(faq, lo, hi, row, model, call)
+    return text
 
 
 # ---------------------------------------------------------------------
@@ -744,6 +861,9 @@ def expand_service_batch(segs: list[dict], lo: int, hi: int, row: dict,
                       "single-item fallback")
             else:
                 new_body = _ensure_gas_safety(seg["body"], block)
+        else:
+            print(f"    batch section {i}: missing from batch output "
+                  "(parse failure) — single-item fallback")
         if new_body is None:
             try:
                 new_body = expand_service_section(seg, lo, hi, row,
@@ -797,6 +917,9 @@ def expand_faq_batch(faqs: list[dict], lo: int, hi: int, row: dict,
                       "single-item fallback")
             else:
                 new_text = text
+        else:
+            print(f"    batch FAQ {i}: missing from batch output "
+                  "(parse failure) — single-item fallback")
         if new_text is None:
             try:
                 new_text = expand_faq_answer(faq, lo, hi, row, model,
@@ -918,6 +1041,163 @@ def append_faq_qas(html: str, pairs: list) -> str:
     block = "".join(f"<h3>{_html_escape(q)}</h3>"
                     f"<p>{_html_escape(a)}</p>" for q, a in pairs)
     return html[:close] + block + html[close:]
+
+
+def _topic_answer_rejected(text: str, allowed_amounts: list) -> str | None:
+    """Guards for a 5b topic-top-up answer: gate length, banned
+    words, and $ discipline — every $ amount in the answer must come
+    from `allowed_amounts` (the row's researched range; empty list
+    means no $ figure is allowed at all)."""
+    w = gate.words(text)
+    if not FAQ_MIN <= w <= FAQ_MAX:
+        return f"answer {w} words (need {FAQ_MIN}–{FAQ_MAX})"
+    reason = _expansion_rejected(text, service=False, original_html="")
+    if reason:
+        return reason
+    bad = [a for a in gate.amounts(text) if a not in allowed_amounts]
+    if bad:
+        return (f"$ figure(s) outside the researched range: {bad} "
+                f"(allowed: {allowed_amounts or 'none'})")
+    return None
+
+
+def generate_topic_faq(kind: str, row: dict, model: str,
+                       call) -> tuple[str, str] | None:
+    """Write ONE gate-recognisable topic Q&A for check 5b.
+
+    Run #17's 13 questions contained an insurance question but none
+    the gate's cost detection recognises — topic presence is too
+    important to leave to the model's topic choice, so the QUESTION
+    is constructed deterministically (it carries the gate's own
+    keywords) and the model writes only the answer. For "cost", the
+    answer may use ONLY the row's researched detection range: the
+    exact range string goes into the prompt and its amounts into the
+    guard as the only allowed $ figures. For "insurance", the answer
+    is general and honest and carries no $ figure at all. Up to 2
+    attempts, the rejection reason fed back into the second.
+    """
+    town = row["town"]
+    if kind == "cost":
+        question = f"How much does leak detection cost in {town}?"
+        rng = (row.get("price_leak_detection") or "").strip()
+        allowed = gate.amounts(rng)
+        if rng:
+            figure_rule = (
+                f"You may use ONLY this researched range, copied "
+                f"exactly: {rng}. Any other $ figure fails "
+                f"validation. Use the word 'typically' and name the "
+                f"{row.get('parent_metro', '')} area.")
+        else:
+            figure_rule = (
+                "Do NOT use any $ figure at all — no researched "
+                "range is on file for this town. Explain what the "
+                "price depends on instead (access, line length, "
+                "equipment time).")
+    else:
+        question = (f"Does homeowners insurance cover leak detection "
+                    f"in {town}?")
+        allowed = []
+        figure_rule = ("Do NOT use any $ figure. Be honest and "
+                       "general: cover what policies typically pay "
+                       "for (sudden, accidental water damage) versus "
+                       "what they usually exclude (the leak itself, "
+                       "wear, slow damage), and tell the homeowner to "
+                       "read their own policy wording.")
+    hint = ""
+    for attempt in (1, 2):
+        user = (
+            "TOWN DATA — the only source of local facts:\n"
+            f"{_grounding_json(row)}\n\n"
+            "Write ONE answer for this exact FAQ question:\n"
+            f"QUESTION: {question}\n\n"
+            "Write the ANSWER only: 55–75 words of plain text (no "
+            "HTML, no markdown), a direct answer in the first "
+            "sentence, then the reasoning and one concrete action "
+            f"the homeowner can take. {figure_rule} Ground every "
+            "local detail in the data above; where the data says "
+            f"nothing, keep the answer general and honest.{hint}")
+        try:
+            out = call(EXPAND_SYSTEM, user, model)
+        except Exception as e:  # noqa: BLE001 — gate judges the draft
+            print(f"    5b {kind} top-up: call failed ({e})")
+            return None
+        out = re.sub(r"\s+", " ", _strip(out)).strip()
+        reason = _topic_answer_rejected(out, allowed)
+        if reason is None:
+            return question, out
+        print(f"    5b {kind} top-up attempt {attempt} rejected "
+              f"({reason})")
+        hint = (f"\nA previous attempt was rejected because: "
+                f"{reason}. Avoid that.")
+    return None
+
+
+def _replace_faq_pair(html: str, pair_index: int, q: str,
+                      a: str) -> str:
+    """Replace the whole <h3>Q</h3><p>A</p> pair at pair_index."""
+    span = _faq_span(html)
+    if not span:
+        return html
+    inner = html[span[0]:span[1]]
+    pairs = _faq_pairs(inner)
+    if pair_index >= len(pairs):
+        return html
+    m = pairs[pair_index]
+    new_inner = (inner[:m.start()]
+                 + f"<h3>{_html_escape(q)}</h3>"
+                   f"<p>{_html_escape(a)}</p>"
+                 + inner[m.end():])
+    return html[:span[0]] + new_inner + html[span[1]:]
+
+
+def _ensure_faq_topics(html: str, row: dict, model: str,
+                       call) -> str:
+    """Guarantee gate check 5b: a recognisable cost AND insurance
+    question in the FAQ. Appends the missing topic pair (count
+    permitting); at the 15-Q&A ceiling it replaces the last pair
+    that holds neither topic instead, so check 5's count stays
+    valid. The ceiling backstop runs after the sweep, so appended
+    words are trimmed there if the body overshoots."""
+    metro, town = row["metro_slug"], row["town_slug"]
+    for kind in ("cost", "insurance"):
+        m = measure_article(html, metro, town)
+        present = m["has_cost"] if kind == "cost" else m["has_insurance"]
+        if present:
+            continue
+        pair = generate_topic_faq(kind, row, model, call)
+        if pair is None:
+            print(f"    5b top-up: no usable {kind} Q&A — gate will "
+                  "judge the draft as-is")
+            continue
+        q, a = pair
+        if len(m["faqs"]) < FAQ_COUNT_MAX:
+            html = append_faq_qas(html, [(q, a)])
+            print(f"    5b top-up: added {kind} Q&A — “{q}”")
+            continue
+        # At the count ceiling: swap out the last pair holding
+        # neither topic (never the sole holder of the other topic).
+        def holds(f: dict) -> tuple[bool, bool]:
+            low = f["q"].lower()
+            return (any(k in low for k in COST_QUESTION_KEYS),
+                    any(k in low for k in INSURANCE_QUESTION_KEYS))
+        cands = [i for i, f in enumerate(m["faqs"])
+                 if holds(f) == (False, False)]
+        if not cands:
+            # Every pair holds the other topic. The missing topic is
+            # held by none (that's why we're here), so any pair is a
+            # candidate as long as the other topic survives the swap.
+            theirs = 1 if kind == "cost" else 0
+            if sum(1 for f in m["faqs"] if holds(f)[theirs]) > 1:
+                cands = list(range(len(m["faqs"])))
+        if not cands:
+            print(f"    5b top-up: FAQ full at {FAQ_COUNT_MAX} and "
+                  f"no swappable pair for {kind} — leaving as-is")
+            continue
+        idx = cands[-1]
+        html = _replace_faq_pair(html, idx, q, a)
+        print(f"    5b top-up: replaced FAQ {idx} with the {kind} "
+              f"Q&A (count stays {FAQ_COUNT_MAX})")
+    return html
 
 
 def inject_sibling_links(html: str, row: dict,
@@ -1284,6 +1564,315 @@ def _enforce_ceiling(html: str, metro: str, town: str) -> str:
     return html
 
 
+# ---------------------------------------------------------------------
+# Gate-aligned final sweep (run #17). The batched rounds stop after
+# 2 iterations by design; run #17 still stored a draft the repair
+# itself measured as deficient (one section at 124 words, one FAQ
+# answer at 38, no gate-recognisable cost question). The sweep is a
+# bounded fix-measure loop over exactly the items the gate checks
+# and generate.py can already measure: it runs while any of them is
+# deficient AND the previous iteration changed something, applying
+# the targeted fix per item — deterministic trims for over-length
+# items, the FAQ count top-up, the 5b topic top-up, and dedicated
+# single-item expansion attempts (up to SWEEP_ITEM_ATTEMPTS per
+# item) that carry the last rejection reason into the next prompt.
+# ---------------------------------------------------------------------
+def _deficiencies(m: dict) -> dict:
+    """What the sweep can still fix, from a measure_article result."""
+    return {
+        "sections": {k: s for k, s in m["services"].items()
+                     if not SEC_MIN <= s["words"] <= SEC_MAX},
+        "missing_sections": [k for k in gate.SERVICE_H2_KEYS
+                             if k not in m["services"]],
+        "faq_answers": [i for i, f in enumerate(m["faqs"])
+                        if not FAQ_MIN <= f["words"] <= FAQ_MAX],
+        "faq_count": not FAQ_COUNT_FLOOR <= len(m["faqs"])
+                         <= FAQ_COUNT_MAX,
+        "cost": not m["has_cost"],
+        "insurance": not m["has_insurance"],
+    }
+
+
+def _any_deficient(d: dict) -> bool:
+    """Missing sections are reported in the verdict but cannot be
+    repaired here (there is no segment to expand), so they don't
+    keep the loop alive on their own."""
+    return bool(d["sections"] or d["faq_answers"] or d["faq_count"]
+                or d["cost"] or d["insurance"])
+
+
+def _faq_answer_text(html: str, idx: int) -> str | None:
+    parser = gate.SectionParser()
+    parser.feed(html)
+    parser.close()
+    if idx >= len(parser.faq_qas):
+        return None
+    return parser.faq_qas[idx][1]
+
+
+def _trim_overlong(html: str, row: dict, m: dict) -> str:
+    """Deterministic trims for over-length items (no Groq calls):
+    service sections over SEC_MAX lose trailing paragraphs (floor
+    SEC_MIN+1, pillar-link paragraphs protected by
+    _trim_section_body); FAQ answers over FAQ_MAX are cut at a
+    sentence boundary (floor FAQ_MIN)."""
+    metro, town = row["metro_slug"], row["town_slug"]
+    prefix, segments = split_article(html)
+    changed = False
+    for key, s in m["services"].items():
+        if s["words"] <= SEC_MAX:
+            continue
+        seg = segments[s["index"]]
+        new_body = _trim_section_body(seg["body"], SEC_MAX - 5,
+                                      floor=SEC_MIN + 1)
+        if new_body != seg["body"]:
+            seg["body"] = new_body
+            changed = True
+            print(f"    sweep trim: {key} {s['words']} → "
+                  f"{gate.words(_strip(new_body))} words")
+    if changed:
+        html = join_article(prefix, segments)
+    for i, f in enumerate(m["faqs"]):
+        if f["words"] <= FAQ_MAX:
+            continue
+        a = _faq_answer_text(html, i)
+        if a is None:
+            continue
+        t = _trim_text(a, FAQ_MAX - 2, floor=FAQ_MIN)
+        if t != a and FAQ_MIN <= gate.words(t) <= FAQ_MAX:
+            html = _replace_faq_answer(html, i, t)
+            print(f"    sweep trim: FAQ {i} {f['words']} → "
+                  f"{gate.words(t)} words")
+    return html
+
+
+def _fix_section_sweep(html: str, key: str, row: dict, model: str,
+                       call, lo: int, hi: int) -> str:
+    """Up to SWEEP_ITEM_ATTEMPTS dedicated single-item expansions
+    for one deficient service section. Each attempt's prompt states
+    the exact target range; a failed attempt's rejection reason (or
+    the landed word count) becomes the next attempt's REPAIR NOTE.
+    A guard-clean candidate that grows the section but is still
+    short is kept as the new base; one that overshoots is trimmed
+    deterministically before giving up on it."""
+    metro, town = row["metro_slug"], row["town_slug"]
+    hint = None
+    for attempt in range(1, SWEEP_ITEM_ATTEMPTS + 1):
+        m = measure_article(html, metro, town)
+        s = m["services"].get(key)
+        if s is None:
+            print(f"    sweep {key}: section missing — cannot repair")
+            return html
+        if SEC_MIN <= s["words"] <= SEC_MAX:
+            return html
+        if hint is None:
+            hint = (f"the section currently has {s['words']} words; "
+                    f"it must land between {SEC_MIN} and {SEC_MAX} "
+                    f"words")
+        prefix, segments = split_article(html)
+        seg = segments[s["index"]]
+        body, reason = _expand_service_section(seg, lo, hi, row,
+                                               model, call, hint=hint)
+        if body is None:
+            hint = reason
+            print(f"    sweep {key}: attempt "
+                  f"{attempt}/{SWEEP_ITEM_ATTEMPTS} failed ({reason})")
+            continue
+        w = gate.words(_strip(body))
+        if SEC_MIN <= w <= SEC_MAX:
+            segments[s["index"]]["body"] = "\n" + body + "\n"
+            print(f"    sweep {key}: attempt {attempt} fixed it — "
+                  f"{s['words']} → {w} words")
+            return join_article(prefix, segments)
+        if w > SEC_MAX:
+            trimmed = _trim_section_body(body, SEC_MAX - 5,
+                                         floor=SEC_MIN + 1)
+            tw = gate.words(_strip(trimmed))
+            if SEC_MIN <= tw <= SEC_MAX:
+                segments[s["index"]]["body"] = "\n" + trimmed + "\n"
+                print(f"    sweep {key}: attempt {attempt} overshot "
+                      f"({w} words) — trimmed to {tw}")
+                return join_article(prefix, segments)
+            hint = (f"the expansion landed at {w} words (need "
+                    f"{SEC_MIN}–{SEC_MAX}) and trimming could not "
+                    f"bring it into range")
+        elif w > s["words"]:
+            segments[s["index"]]["body"] = "\n" + body + "\n"
+            html = join_article(prefix, segments)
+            hint = (f"the expansion landed at {w} words (need "
+                    f"{SEC_MIN}–{SEC_MAX}) — keep everything already "
+                    f"there and expand further")
+            print(f"    sweep {key}: attempt {attempt} grew it to "
+                  f"{w} words — still short, retrying")
+            continue
+        else:
+            hint = (f"the expansion landed at {w} words (need "
+                    f"{SEC_MIN}–{SEC_MAX})")
+        print(f"    sweep {key}: attempt "
+              f"{attempt}/{SWEEP_ITEM_ATTEMPTS} not in range ({hint})")
+    return html
+
+
+def _fix_faq_sweep(html: str, idx: int, row: dict, model: str,
+                   call, lo: int, hi: int) -> str:
+    """Up to SWEEP_ITEM_ATTEMPTS dedicated single-item expansions
+    for one deficient FAQ answer — same contract as
+    _fix_section_sweep (over-length answers are _trim_overlong's
+    job; this fixes short ones)."""
+    metro, town = row["metro_slug"], row["town_slug"]
+    hint = None
+    for attempt in range(1, SWEEP_ITEM_ATTEMPTS + 1):
+        m = measure_article(html, metro, town)
+        if idx >= len(m["faqs"]):
+            return html
+        f = m["faqs"][idx]
+        if FAQ_MIN <= f["words"] <= FAQ_MAX:
+            return html
+        if f["words"] > FAQ_MAX:
+            return html  # deterministic trim territory, not calls
+        if hint is None:
+            hint = (f"the answer currently has {f['words']} words; "
+                    f"it must land between {FAQ_MIN} and {FAQ_MAX} "
+                    f"words")
+        text, reason = _expand_faq_answer(f, lo, hi, row, model,
+                                          call, hint=hint)
+        if text is None:
+            hint = reason
+            print(f"    sweep FAQ {idx}: attempt "
+                  f"{attempt}/{SWEEP_ITEM_ATTEMPTS} failed ({reason})")
+            continue
+        w = gate.words(text)
+        if FAQ_MIN <= w <= FAQ_MAX:
+            html = _replace_faq_answer(html, idx, text)
+            print(f"    sweep FAQ {idx}: attempt {attempt} fixed "
+                  f"it — {f['words']} → {w} words")
+            return html
+        if w > FAQ_MAX:
+            t = _trim_text(text, FAQ_MAX - 2, floor=FAQ_MIN)
+            if FAQ_MIN <= gate.words(t) <= FAQ_MAX:
+                html = _replace_faq_answer(html, idx, t)
+                print(f"    sweep FAQ {idx}: attempt {attempt} "
+                      f"overshot ({w} words) — trimmed to "
+                      f"{gate.words(t)}")
+                return html
+            hint = (f"the answer landed at {w} words (need "
+                    f"{FAQ_MIN}–{FAQ_MAX}) and trimming could not "
+                    f"bring it into range")
+        elif w > f["words"]:
+            html = _replace_faq_answer(html, idx, text)
+            hint = (f"the answer landed at {w} words (need "
+                    f"{FAQ_MIN}–{FAQ_MAX}) — keep the same content "
+                    f"and expand further")
+            print(f"    sweep FAQ {idx}: attempt {attempt} grew it "
+                  f"to {w} words — still short, retrying")
+            continue
+        else:
+            hint = (f"the answer landed at {w} words (need "
+                    f"{FAQ_MIN}–{FAQ_MAX})")
+        print(f"    sweep FAQ {idx}: attempt "
+              f"{attempt}/{SWEEP_ITEM_ATTEMPTS} not in range ({hint})")
+    return html
+
+
+def _final_sweep(html: str, row: dict, model: str, call) -> str:
+    """Bounded fix-measure loop: while anything measurable is still
+    deficient and the previous iteration changed something, apply
+    the targeted fixes and re-measure (max SWEEP_MAX_ITERS)."""
+    metro, town = row["metro_slug"], row["town_slug"]
+    for it in range(1, SWEEP_MAX_ITERS + 1):
+        m = measure_article(html, metro, town)
+        d = _deficiencies(m)
+        if not _any_deficient(d):
+            print(f"  final sweep: iteration {it} — nothing "
+                  "deficient")
+            return html
+        print(f"  final sweep {it}/{SWEEP_MAX_ITERS}: "
+              f"{len(d['sections'])} sections, "
+              f"{len(d['faq_answers'])} FAQ answers, "
+              f"count {'ok' if not d['faq_count'] else 'deficient'}, "
+              f"cost {'ok' if not d['cost'] else 'missing'}, "
+              f"insurance {'ok' if not d['insurance'] else 'missing'}")
+        before = html
+        # Deterministic trims first — over-length items cost no calls.
+        html = _trim_overlong(html, row,
+                              measure_article(html, metro, town))
+        # FAQ count (same batched top-up as before the rounds).
+        m = measure_article(html, metro, town)
+        if len(m["faqs"]) < FAQ_COUNT_FLOOR:
+            need = FAQ_COUNT_TARGET - len(m["faqs"])
+            print(f"    sweep FAQ count top-up: {len(m['faqs'])} "
+                  f"Q&As — generating {need} more")
+            try:
+                pairs = generate_faq_topups(
+                    [f["q"] for f in m["faqs"]], need, row, model,
+                    call)
+            except Exception as e:  # noqa: BLE001
+                print(f"    sweep FAQ top-up call failed ({e})")
+                pairs = []
+            if pairs:
+                html = append_faq_qas(html, pairs)
+        # 5b topics (cost / insurance presence).
+        html = _ensure_faq_topics(html, row, model, call)
+        # Per-item dedicated attempts for what is still short.
+        sec_t, faq_t = _budgeted_targets(
+            measure_article(html, metro, town))
+        m = measure_article(html, metro, town)
+        for key in [k for k, s in m["services"].items()
+                    if s["words"] < SEC_MIN]:
+            html = _fix_section_sweep(html, key, row, model, call,
+                                      sec_t, sec_t + 30)
+        m = measure_article(html, metro, town)
+        for i in [i for i, f in enumerate(m["faqs"])
+                  if f["words"] < FAQ_MIN]:
+            html = _fix_faq_sweep(html, i, row, model, call,
+                                  faq_t, faq_t + 12)
+        if html == before:
+            print(f"  final sweep {it}: no change — stopping")
+            break
+    return html
+
+
+def _print_final_verdict(m: dict) -> None:
+    """Final self-measurement, logged before the draft is stored.
+    Deficient items are printed in the gate's own FAIL-line formats
+    (validate.py checks 3b / 5 / 5b) so the run log reads exactly
+    like the gate will."""
+    bad_secs = [f"{k}: h2 missing" for k in gate.SERVICE_H2_KEYS
+                if k not in m["services"]]
+    bad_secs += [f"{k}: {s['words']} words"
+                 for k, s in m["services"].items()
+                 if not SEC_MIN <= s["words"] <= SEC_MAX]
+    bad_faqs = [(f["q"][:40], f["words"]) for f in m["faqs"]
+                if not FAQ_MIN <= f["words"] <= FAQ_MAX]
+    n = len(m["faqs"])
+    ok_secs = sum(1 for s in m["services"].values()
+                  if SEC_MIN <= s["words"] <= SEC_MAX)
+    ok_faqs = sum(1 for f in m["faqs"]
+                  if FAQ_MIN <= f["words"] <= FAQ_MAX)
+    print(f"  final self-measurement: sections {ok_secs}/10 in "
+          f"range, FAQ answers {ok_faqs}/{n} in range, FAQ count "
+          f"{n} (gate {FAQ_COUNT_FLOOR}–{FAQ_COUNT_MAX}), cost "
+          f"question: {'yes' if m['has_cost'] else 'NO'}, insurance "
+          f"question: {'yes' if m['has_insurance'] else 'NO'}")
+    deficient = []
+    if bad_secs:
+        deficient.append("3b — " + "; ".join(bad_secs))
+    if bad_faqs or not FAQ_COUNT_FLOOR <= n <= FAQ_COUNT_MAX:
+        line = f"5 — {n} Q&As"
+        if bad_faqs:
+            line += f"; bad lengths: {bad_faqs}"
+        deficient.append(line)
+    if not (m["has_cost"] and m["has_insurance"]):
+        deficient.append(
+            f"5b — cost question: {m['has_cost']}, insurance "
+            f"question: {m['has_insurance']}")
+    for line in deficient:
+        print(f"  final self-measurement: STILL DEFICIENT — {line}")
+    if not deficient:
+        print("  final self-measurement: every sweep check in gate "
+              "range")
+
+
 def repair_article(html: str, row: dict, siblings: list[dict],
                    model: str, call=call_groq_text) -> str:
     """Measure-and-repair a generated draft before it is stored.
@@ -1291,16 +1880,19 @@ def repair_article(html: str, row: dict, siblings: list[dict],
     Order: inject sibling links → FAQ count top-up (one batched call,
     only when the count landed under the gate floor) → up to 2
     expansion rounds for deficient service sections / FAQ answers →
-    pillar-link injection → trim backstop if the body overshoots the
-    ceiling → top-up if it is still under the floor. Every step
-    re-measures with the gate's own counters. Expansion calls are
-    batched and paced (run #14: ~44 unpaced calls all bounced off
-    Groq's per-minute 429 limit). The FAQ top-up runs before the
-    rounds so a short appended answer can still be expanded, and
-    before the ceiling backstop so its words are counted there;
-    pillar injection runs after the rounds so an expansion cannot
-    strip the anchors, and before the backstop so any appended
-    "More on" words are counted there too.
+    gate-aligned final sweep (bounded fix-measure loop: trims, 5b
+    topic top-up, per-item retries with rejection reasons) → pillar-
+    link injection → trim backstop if the body overshoots the
+    ceiling → top-up if it is still under the floor → final
+    self-measurement verdict. Every step re-measures with the gate's
+    own counters. Expansion calls are batched and paced (run #14:
+    ~44 unpaced calls all bounced off Groq's per-minute 429 limit).
+    The FAQ top-up runs before the rounds so a short appended answer
+    can still be expanded, and before the ceiling backstop so its
+    words are counted there; the sweep runs before pillar injection
+    so a re-expanded section can't lose its anchors, and pillar
+    injection runs before the backstop so any appended "More on"
+    words are counted there too.
     """
     metro, town = row["metro_slug"], row["town_slug"]
     html = inject_sibling_links(html, row, siblings)
@@ -1383,6 +1975,14 @@ def repair_article(html: str, row: dict, siblings: list[dict],
                         print(f"    FAQ {i}: {m_now['faqs'][i]['words']} "
                               f"→ {gate.words(new_text)} words")
 
+    # Gate-aligned final sweep (run #17): the rounds stop after 2
+    # iterations even when an item they can measure is still
+    # deficient, and 5b topic presence was never repaired at all.
+    # The sweep keeps fixing — per item, with reasons — until the
+    # draft measures clean or stops changing. Runs before pillar
+    # injection so a re-expanded section can't lose its anchors.
+    html = _final_sweep(html, row, model, paced)
+
     # Pillar links (run #15: only 2 of 10 linked by the model; the
     # gate needs ≥4 distinct). Deterministic injection, after the
     # rounds so expansions can't strip the anchors, before the
@@ -1429,6 +2029,7 @@ def repair_article(html: str, row: dict, siblings: list[dict],
           f"{len(m['faqs'])} FAQ Q&As, "
           f"sections out of range: {short_secs or 'none'}, "
           f"FAQ answers out of range: {short_faqs or 'none'}")
+    _print_final_verdict(m)
     return html
 
 
