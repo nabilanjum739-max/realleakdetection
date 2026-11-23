@@ -44,7 +44,9 @@ SYSTEM_PROMPT = """You are a local-service copywriter. You receive ONE JSON obje
 5. Tone: plain, direct, local. Short sentences. No AI-tell phrases (list
    appended). Write like the teacher's sites: facts first, no fluff.
 6. Emit the omission log: every blank field and every skipped section.
-7. FAQ answers: direct answer in sentence one, 50–70 words total.
+7. FAQ answers: direct answer in sentence one, 50–70 words total. 50 is a
+   HARD FLOOR, not a target — an answer under 50 words mechanically fails
+   validation and the whole page is rejected.
 8. BANNED CLAIMS — never use anywhere in the article: specialist, expert,
    same-day, free assessment, free quotes, single visit, 24/7, any
    under-60-minutes arrival promise. Never claim a licence number, an
@@ -62,6 +64,12 @@ SYSTEM_PROMPT = """You are a local-service copywriter. You receive ONE JSON obje
    cut in this order first: N12, N10, N9, N7, N4, N8.
    NEVER cut a service section below 200 words, never cut the N2 or N5
    tables, never cut the FAQ below 12 Q&As.
+   LENGTH MINIMUMS (mechanical — a validator counts every word): each of
+   the 10 service sections ≥200 words; each FAQ answer ≥50 words; the
+   article body ≥3,700 words in total. These minimums are stated again
+   in the template because under-length sections are the most common
+   failure: when many sections compete, do NOT compress the later ones
+   — every section gets its full minimum, in order, every time.
 10. CARDS SHOW, ARTICLE INTERPRETS: the page displays data cards with the
     exact soil type, prices and stats above the article — do NOT restate
     those figures as a list; interpret what they mean for the reader
@@ -114,7 +122,10 @@ TEMPLATE — write these sections as one <article> of clean HTML:
 5. Ten service <h2> sections, 200–210 words EACH — 200 is a HARD MINIMUM:
    a section under 200 words fails validation and the whole page is
    rejected, so write every section in full (never compress the later
-   ones), in this order: Slab leak
+   ones). 200 words is roughly 12–14 full sentences — count as you go,
+   and if a section feels finished before 200 words, add the homeowner
+   steps and detection detail the template asks for below rather than
+   stopping early. Write the sections in this order: Slab leak
    detection, Underground / yard line leak detection, Water main leak
    detection, Sewer line leak detection, Sewer camera inspection & diagnosis,
    Septic tank leak detection, Gas line leak detection (safety box FIRST),
@@ -197,7 +208,9 @@ TEMPLATE — write these sections as one <article> of clean HTML:
 17. Property managers & home buyers <h2>: two short audience blocks.
     ~40 words.
 18. FAQ <h2>: 12–15 questions, each answer 50–70 words, direct answer in
-    sentence one. The set MUST include at least one question about cost or
+    sentence one. 50 words per answer is a HARD MINIMUM (repeated from
+    rule 7): an answer under 50 words mechanically fails validation.
+    The set MUST include at least one question about cost or
     price and at least one about homeowners insurance coverage. Wrap as
     <div class="faq"><h3>Q…</h3><p>A…</p>…</div>. Prefer 12 Q&As — the
     budget only fits 12–13 at 50–60 words each (~600 words).
@@ -239,6 +252,23 @@ SERVICE_PILLARS = [
 ]
 
 
+def fetch_siblings(sb, row: dict) -> list[dict]:
+    """Real sibling towns in the same metro from the DB (best-effort).
+
+    Used for the prompt's LINK TARGETS list and for the programmatic
+    sibling-link injection in the repair pass — one source of truth.
+    """
+    if sb is None:
+        return []
+    try:
+        res = (sb.table("towns").select("town, town_slug")
+               .eq("metro_slug", row["metro_slug"])
+               .neq("town_slug", row["town_slug"]).execute())
+        return res.data or []
+    except Exception:  # noqa: BLE001 — link targets are best-effort
+        return []
+
+
 def build_user_message(row: dict, sb=None) -> str:
     data = {c: (row.get(c) or "") for c in RESEARCH_COLUMNS}
     data["parent_metro_full"] = row.get("parent_metro", "")
@@ -252,15 +282,7 @@ def build_user_message(row: dict, sb=None) -> str:
            "trace to these fields:\n" + json.dumps(data, indent=2))
     # LINK TARGETS (prompt §17): real sibling slugs from the DB + the fixed
     # pillar list, so the model links only to URLs that exist.
-    siblings = []
-    if sb is not None:
-        try:
-            res = (sb.table("towns").select("town, town_slug")
-                   .eq("metro_slug", row["metro_slug"])
-                   .neq("town_slug", row["town_slug"]).execute())
-            siblings = res.data or []
-        except Exception:  # noqa: BLE001 — link targets are best-effort
-            siblings = []
+    siblings = fetch_siblings(sb, row)
     lines = ["", "LINK TARGETS — the ONLY URLs you may link to:"]
     lines.append(f"Metro hub: /tx/{row['metro_slug']}/")
     lines.append("Service pillars:")
@@ -272,7 +294,8 @@ def build_user_message(row: dict, sb=None) -> str:
     return msg + "\n" + "\n".join(lines)
 
 
-def call_llm(system: str, user: str, model: str) -> dict:
+def call_groq_text(system: str, user: str, model: str) -> str:
+    """One raw Groq chat call; returns the message content, fences stripped."""
     key = os.environ.get("GROQ_API_KEY")
     if not key:
         raise RuntimeError("GROQ_API_KEY is not set")
@@ -287,9 +310,12 @@ def call_llm(system: str, user: str, model: str) -> dict:
     }, timeout=300)
     r.raise_for_status()
     content = r.json()["choices"][0]["message"]["content"]
-    content = re.sub(r"^```(?:json|html)?|```$", "", content.strip(),
-                     flags=re.MULTILINE).strip()
-    # New delimiter format: <ARTICLE>…</ARTICLE><OMISSION>…</OMISSION>
+    return re.sub(r"^```(?:json|html)?|```$", "", content.strip(),
+                  flags=re.MULTILINE).strip()
+
+
+def call_llm(system: str, user: str, model: str) -> dict:
+    content = call_groq_text(system, user, model)
     m_art = re.search(r"<ARTICLE>(.*?)</ARTICLE>", content, re.DOTALL)
     m_omi = re.search(r"<OMISSION>(.*?)</OMISSION>", content, re.DOTALL)
     if m_art and m_omi:
@@ -302,6 +328,579 @@ def call_llm(system: str, user: str, model: str) -> dict:
         return {"html": html, "omission_log": omission}
     # Fallback: legacy JSON object format
     return json.loads(content)
+
+
+# =====================================================================
+# MEASURE-AND-REPAIR PASS
+#
+# Run #13 (El Paso pilot) proved the model under-writes when ~30
+# sections compete: service sections landed at 72–93 words (gate needs
+# 200–400), FAQ answers at 16–31 (gate needs 50–80), body at 2,561
+# (gate needs 3,700–4,100), and the model wrote 0 sibling links.
+# Rather than weakening the gate, generate.py now measures the draft
+# with validate.py's OWN parser/counters, expands each deficient
+# section/answer with a focused follow-up call grounded in the same
+# town data, injects sibling links programmatically, and trims if the
+# expansions overshoot the body ceiling. validate.py still runs after
+# this in the workflow and remains the final arbiter.
+# =====================================================================
+import validate as gate  # same directory; gate logic is the source of truth
+
+SEC_MIN, SEC_MAX = 200, 400        # gate check 3b
+FAQ_MIN, FAQ_MAX = 50, 80          # gate check 5
+BODY_FLOOR, BODY_CEIL = gate.BODY_MIN, gate.BODY_MAX   # gate check 12
+TOTAL_AIM = 3900                   # land mid-band, not on an edge
+TOTAL_SOFT_MAX = 4050              # trim backstop engages above this
+
+EXPAND_SYSTEM = """You expand ONE part of a local leak-detection town guide.
+You receive the town's data row (JSON) and the current text. Rules:
+1. Use ONLY local facts from the data row or the current text. Never
+   invent a local fact: no new neighbourhood names, ZIP codes, prices,
+   utilities, MUD names, licence numbers, addresses, or reviews. You MAY
+   expand general explanations — symptoms, how detection works, what a
+   homeowner should check — in plain language.
+2. NEVER use: specialist, expert, same-day, free assessment, free
+   quotes, single visit, 24/7, or the AI-tell phrases delve, tapestry,
+   moreover, furthermore, "look no further", "top-notch", "in conclusion".
+3. Service sections contain NO prices and NO $ ranges — all pricing
+   lives in a separate table elsewhere in the article.
+4. Length is counted mechanically: your output MUST land inside the
+   requested word range. Count as you write; short output fails the
+   whole page.
+5. If the current text begins with a safety box containing "call 911",
+   reproduce that box FIRST, word for word, before anything else."""
+
+
+def _strip(html: str) -> str:
+    return re.sub(r"<[^>]+>", " ", html)
+
+
+def split_article(html: str) -> tuple[str, list[dict]]:
+    """Split article HTML at <h2> boundaries for splicing.
+
+    Returns (prefix, segments); each segment is {h2_html, h2_text,
+    body}. prefix + ''.join(h2_html + body) reproduces the input
+    exactly, so splicing a body never disturbs the rest.
+    """
+    matches = list(re.finditer(r"<h2\b[^>]*>.*?</h2>", html,
+                               re.DOTALL | re.I))
+    if not matches:
+        return html, []
+    segments = []
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(html)
+        segments.append({
+            "h2_html": m.group(0),
+            "h2_text": _strip(m.group(0)).strip(),
+            "body": html[m.end():end],
+        })
+    return html[:matches[0].start()], segments
+
+
+def join_article(prefix: str, segments: list[dict]) -> str:
+    return prefix + "".join(s["h2_html"] + s["body"] for s in segments)
+
+
+def measure_article(html: str, metro: str, town: str) -> dict:
+    """Measure a draft with the gate's own parser and counters.
+
+    Returns total words, per-service-section word counts (with the
+    segment index to splice), FAQ answer word counts, and the sibling
+    link count — exactly as validate.py checks 3b/5/11/12 see them.
+    """
+    parser = gate.SectionParser()
+    parser.feed(html)
+    parser.close()
+    _, segments = split_article(html)
+    aligned = len(parser.sections) == len(segments)
+    services = {}
+    for key in gate.SERVICE_H2_KEYS:
+        for i, (h, b) in enumerate(parser.sections):
+            if key in h.lower():
+                services[key] = {"index": i, "words": gate.words(b)}
+                break
+    sibs = set()
+    for h in re.findall(r'href="([^"]+)"', html):
+        m = re.search(r"/tx/([a-z0-9-]+)/([a-z0-9-]+)/?$", h)
+        if m and m.group(1) == metro and m.group(2) != town:
+            sibs.add(m.group(2))
+    return {
+        "total": gate.words(_strip(html)),
+        "services": services,
+        "faqs": [{"q": q, "words": gate.words(a)}
+                 for q, a in parser.faq_qas],
+        "siblings": sibs,
+        "aligned": aligned,
+    }
+
+
+def _faq_span(html: str) -> tuple[int, int] | None:
+    """(start, end) of the <div class="faq">…</div> block, depth-aware."""
+    m = re.search(r'<div\b[^>]*class="[^"]*\bfaq\b[^"]*"[^>]*>', html, re.I)
+    if not m:
+        return None
+    depth = 1
+    for t in re.finditer(r"<div\b[^>]*>|</div>", html[m.end():], re.I):
+        depth += -1 if t.group(0).startswith("</") else 1
+        if depth == 0:
+            return m.start(), m.end() + t.end()
+    return None
+
+
+def _faq_pairs(inner: str) -> list[re.Match]:
+    """<h3>Q</h3><p>A</p> pairs inside the FAQ div, in order.
+
+    Group 1 is the <h3>…</h3> part (kept verbatim on replacement);
+    group 2 is the answer's inner HTML.
+    """
+    return list(re.finditer(
+        r"(<h3\b[^>]*>.*?</h3>\s*)<p\b[^>]*>(.*?)</p>", inner,
+        re.DOTALL | re.I))
+
+
+def _replace_faq_answer(html: str, pair_index: int, new_text: str) -> str:
+    span = _faq_span(html)
+    if not span:
+        return html
+    inner = html[span[0]:span[1]]
+    pairs = _faq_pairs(inner)
+    if pair_index >= len(pairs):
+        return html
+    m = pairs[pair_index]
+    new_inner = (inner[:m.start()] + m.group(1) + "<p>" +
+                 _html_escape(new_text) + "</p>" + inner[m.end():])
+    return html[:span[0]] + new_inner + html[span[1]:]
+
+
+def _html_escape(text: str) -> str:
+    return (text.replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;"))
+
+
+def _expansion_rejected(new_html: str, service: bool,
+                        original_html: str) -> str | None:
+    """Deterministic guards on expansion output; returns a reason or None."""
+    if not new_html or len(new_html.strip()) < 40:
+        return "empty/short output"
+    if "<h2" in new_html.lower():
+        return "contains an <h2> (structure would corrupt)"
+    text = _strip(new_html).lower()
+    bad = [p for p in gate.BANNED_PHRASES if p in text]
+    if bad:
+        return f"AI-tell phrase(s): {bad}"
+    claims = [label for label, pat in gate.BANNED_CLAIMS if pat.search(text)]
+    if claims:
+        return f"banned claim(s): {claims}"
+    if service and gate.dollar_ranges(text) \
+            and not gate.dollar_ranges(_strip(original_html).lower()):
+        return "introduces a $ range into a service section"
+    return None
+
+
+def _ensure_gas_safety(original_body: str, new_body: str) -> str:
+    """The gas safety box must survive expansion (gate check 6)."""
+    if "911" in _strip(original_body) and "911" not in _strip(new_body):
+        for m in re.finditer(r"<div\b[^>]*>.*?</div>|<p\b[^>]*>.*?</p>",
+                             original_body, re.DOTALL | re.I):
+            if "911" in _strip(m.group(0)):
+                return m.group(0) + "\n" + new_body
+    return new_body
+
+
+def _grounding_json(row: dict) -> str:
+    data = {c: (row.get(c) or "") for c in RESEARCH_COLUMNS}
+    data["parent_metro_full"] = row.get("parent_metro", "")
+    return json.dumps(data, indent=2)
+
+
+def expand_service_section(seg: dict, lo: int, hi: int, row: dict,
+                           model: str, call) -> str | None:
+    """One focused expansion call for a service section body."""
+    user = (
+        f"TOWN DATA — the only source of local facts:\n"
+        f"{_grounding_json(row)}\n\n"
+        f"SECTION HEADING: {seg['h2_text']}\n"
+        f"CURRENT SECTION BODY HTML:\n{seg['body']}\n\n"
+        f"Expand this section body to {lo}–{hi} words. Keep every fact "
+        f"already present; add depth on symptoms, how detection works "
+        f"and the steps a homeowner should take, using only the data "
+        f"above. Keep the same HTML structure (paragraphs, any safety "
+        f"box first). Return ONLY the expanded body HTML — no heading, "
+        f"no markdown fences.")
+    out = call(EXPAND_SYSTEM, user, model)
+    reason = _expansion_rejected(out, service=True,
+                                 original_html=seg["body"])
+    if reason:
+        print(f"    expansion rejected ({reason})")
+        return None
+    return _ensure_gas_safety(seg["body"], out)
+
+
+def expand_faq_answer(faq: dict, lo: int, hi: int, row: dict,
+                      model: str, call) -> str | None:
+    """One focused expansion call for a single FAQ answer (plain text)."""
+    user = (
+        f"TOWN DATA — the only source of local facts:\n"
+        f"{_grounding_json(row)}\n\n"
+        f"QUESTION: {faq['q']}\n"
+        f"Expand the answer to this question to {lo}–{hi} words of "
+        f"plain text (no HTML, no markdown). Keep a direct answer in "
+        f"the first sentence, then add the reasoning and one concrete "
+        f"action the homeowner can take. Use only the data above. "
+        f"Return ONLY the answer text.")
+    out = _strip(call(EXPAND_SYSTEM, user, model)).strip()
+    out = re.sub(r"\s+", " ", out)
+    reason = _expansion_rejected(out, service=False, original_html="")
+    if reason:
+        print(f"    FAQ expansion rejected ({reason})")
+        return None
+    if gate.words(out) <= faq["words"]:
+        print("    FAQ expansion did not grow the answer")
+        return None
+    return out
+
+
+def inject_sibling_links(html: str, row: dict,
+                         siblings: list[dict]) -> str:
+    """Programmatically add sibling-town links (gate check 11).
+
+    The model wrote 0 sibling links in run #13 despite being given the
+    targets, so this no longer relies on the model. Inserts one natural
+    paragraph just before the FAQ section (the article's closing area),
+    linking real sibling towns from the DB, in the exact href format
+    check 11 parses.
+    """
+    metro, town = row["metro_slug"], row["town_slug"]
+    have = measure_article(html, metro, town)["siblings"]
+    picks = [s for s in siblings if s["town_slug"] not in have][:4 - len(have)]
+    if len(have) >= 4 or not picks:
+        return html
+    links = []
+    for s in picks:
+        links.append(f'<a href="/tx/{metro}/{s["town_slug"]}/">'
+                     f'{s["town"]} leak detection</a>')
+    if len(links) == 1:
+        joined = links[0]
+    else:
+        joined = ", ".join(links[:-1]) + f" and {links[-1]}"
+    para = (f'<p class="nearby-guides">Nearby leak guides: {joined}. '
+            f"Soil, water systems and "
+            f"housing stock do not stop at town lines, so the checks in "
+            f"this guide are a useful starting point across the "
+            f"{row.get('parent_metro', '')} area — each town's own guide "
+            f"covers its soil, utility and pricing notes.</p>")
+    prefix, segments = split_article(html)
+    faq_idx = next((i for i, s in enumerate(segments)
+                    if 'class="faq"' in s["body"]), None)
+    if faq_idx is not None and faq_idx > 0:
+        segments[faq_idx - 1]["body"] += "\n" + para
+        return join_article(prefix, segments)
+    if faq_idx == 0:
+        segments[0]["body"] = para + "\n" + segments[0]["body"]
+        return join_article(prefix, segments)
+    if "</article>" in html:
+        return html.replace("</article>", para + "\n</article>", 1)
+    return html + "\n" + para
+
+
+def _trim_section_body(body: str, target_words: int,
+                       floor: int = 0) -> str:
+    """Drop trailing <p> blocks until the body fits (never tables, never
+    a block containing '911', never the injected nearby-guides
+    paragraph, always keep at least one paragraph, and never drop a
+    paragraph that would take the body under `floor`)."""
+    while gate.words(_strip(body)) > target_words:
+        paras = list(re.finditer(r"<p\b[^>]*>.*?</p>", body,
+                                 re.DOTALL | re.I))
+        removable = [m for m in paras
+                     if "911" not in _strip(m.group(0))
+                     and "nearby-guides" not in m.group(0)]
+        if len(paras) <= 1 or not removable:
+            break
+        m = removable[-1]
+        if gate.words(_strip(body)) - gate.words(_strip(m.group(0))) < floor:
+            break
+        body = body[:m.start()] + body[m.end():]
+    return body
+
+
+def _trim_text(text: str, target_words: int, floor: int = 0) -> str:
+    """Trim plain text to a word target at a sentence boundary; if the
+    only fitting cut would breach `floor`, return the text unchanged."""
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    out = ""
+    for s in sentences:
+        if out and gate.words(out + " " + s) > target_words:
+            break
+        out = (out + " " + s).strip()
+    if not out or gate.words(out) < floor:
+        return text
+    return out
+
+
+def _word_trim_text(text: str, target_words: int) -> str:
+    """Last-resort word-level trim: cut plain text at a word boundary
+    and close the sentence. Only used when whole-paragraph/sentence
+    trims stall on granularity a few words above the ceiling."""
+    words = text.split()
+    if len(words) <= target_words:
+        return text
+    out = " ".join(words[:target_words]).rstrip(",;:")
+    if not out.endswith((".", "!", "?")):
+        out += "."
+    return out
+
+
+def _budgeted_targets(m: dict) -> tuple[int, int]:
+    """Per-item expansion targets that respect the total body budget.
+
+    The §3.3 budget is tight: at template-size N-sections, service
+    sections at the 200 floor + FAQ answers at the 50 floor already
+    total ~4,050 of the 4,100 ceiling. So plan against the expected
+    LANDING size (asks are ranges; models land mid-range), aim high
+    only when the rest of the article leaves room, and step down to
+    the floors before planning past the ceiling. Any residual
+    overshoot is removed by the trim backstop, never by the gate.
+    """
+    rest = (m["total"]
+            - sum(s["words"] for s in m["services"].values())
+            - sum(f["words"] for f in m["faqs"]))
+
+    def projected(sec_t: int, faq_t: int) -> int:
+        secs = sum(sec_t + 12 if s["words"] < sec_t else s["words"]
+                   for s in m["services"].values())
+        faqs = sum(faq_t + 6 if f["words"] < faq_t else f["words"]
+                   for f in m["faqs"])
+        return rest + secs + faqs
+
+    sec_t, faq_t = 270, 60
+    while projected(sec_t, faq_t) > TOTAL_SOFT_MAX and sec_t > SEC_MIN:
+        sec_t -= 5
+    while projected(sec_t, faq_t) > TOTAL_SOFT_MAX and faq_t > FAQ_MIN:
+        faq_t -= 1
+    return sec_t, faq_t
+
+
+def _enforce_ceiling(html: str, metro: str, town: str) -> str:
+    """Trim backstop: bring the body under TOTAL_SOFT_MAX by removing
+    words, in order: longest service section (paragraph drops, floor
+    ~202), longest FAQ answer (sentence trims, floor ~51), then the
+    longest other section's paragraphs (floor ~45). The gate's ceiling
+    is never a reason to fail if words can come out — but no trim may
+    push an item under its own gate floor.
+    """
+    m = measure_article(html, metro, town)
+    guard = 0
+    while m["total"] > TOTAL_SOFT_MAX and guard < 60:
+        guard += 1
+        excess = m["total"] - 4030
+        prefix, segments = split_article(html)
+        changed = False
+        # Tier 1: longest service sections first.
+        long_secs = sorted(
+            ((s["words"], k, s["index"])
+             for k, s in m["services"].items() if s["words"] > 212),
+            reverse=True)
+        for _, key, idx in long_secs:
+            target = max(202, m["services"][key]["words"] - excess - 5)
+            new_body = _trim_section_body(
+                segments[idx]["body"], target, floor=201)
+            if new_body != segments[idx]["body"]:
+                segments[idx]["body"] = new_body
+                html = join_article(prefix, segments)
+                changed = True
+                break
+        # Tier 2: longest FAQ answers.
+        if not changed:
+            long_faqs = sorted(
+                ((f["words"], i) for i, f in enumerate(m["faqs"])
+                 if f["words"] > 54), reverse=True)
+            for w, i in long_faqs:
+                parser = gate.SectionParser()
+                parser.feed(html)
+                parser.close()
+                q, a = parser.faq_qas[i]
+                new_html = _replace_faq_answer(
+                    html, i, _trim_text(a, max(51, w - excess - 2),
+                                        floor=FAQ_MIN))
+                if new_html != html:
+                    html = new_html
+                    changed = True
+                    break
+        # Tier 3: longest other sections (never the FAQ segment).
+        if not changed:
+            service_idx = {s["index"] for s in m["services"].values()}
+            others = []
+            for i, seg in enumerate(segments):
+                if i in service_idx or 'class="faq"' in seg["body"]:
+                    continue
+                w = gate.words(_strip(seg["body"]))
+                if w > 60:
+                    others.append((w, i))
+            for w, idx in sorted(others, reverse=True):
+                new_body = _trim_section_body(
+                    segments[idx]["body"], max(45, w - excess - 5),
+                    floor=44)
+                if new_body != segments[idx]["body"]:
+                    segments[idx]["body"] = new_body
+                    html = join_article(prefix, segments)
+                    changed = True
+                    break
+        # Tier 4 (micro-trim): word-level trim of a single item. Fires
+        # only when whole-paragraph/sentence trims stall on granularity
+        # just above the ceiling; floors still apply (FAQ >= 51 words,
+        # service sections >= 202).
+        if not changed:
+            faq_cands = sorted(
+                ((f["words"], i) for i, f in enumerate(m["faqs"])
+                 if f["words"] > FAQ_MIN + 1), reverse=True)
+            for w, i in faq_cands:
+                parser = gate.SectionParser()
+                parser.feed(html)
+                parser.close()
+                q, a = parser.faq_qas[i]
+                cut = min(excess + 5, w - (FAQ_MIN + 1))
+                if cut <= 0:
+                    continue
+                new_html = _replace_faq_answer(
+                    html, i, _word_trim_text(a, w - cut))
+                if new_html != html:
+                    html = new_html
+                    changed = True
+                    break
+        if not changed:
+            sec_cands = sorted(
+                ((s["words"], k, s["index"])
+                 for k, s in m["services"].items()
+                 if s["words"] > SEC_MIN + 2), reverse=True)
+            for w, key, idx in sec_cands:
+                body = segments[idx]["body"]
+                paras = list(re.finditer(r"<p\b[^>]*>(.*?)</p>", body,
+                                         re.DOTALL | re.I))
+                plain = [pm for pm in paras
+                         if "<" not in pm.group(1)
+                         and "911" not in pm.group(1)
+                         and "nearby-guides" not in pm.group(0)]
+                if not plain:
+                    continue
+                pm = plain[-1]
+                cur = gate.words(pm.group(1))
+                cut = min(excess + 5, w - (SEC_MIN + 2), cur - 5)
+                if cut <= 0:
+                    continue
+                new_p = ("<p>" + _word_trim_text(pm.group(1), cur - cut)
+                         + "</p>")
+                segments[idx]["body"] = (body[:pm.start()] + new_p
+                                         + body[pm.end():])
+                html = join_article(prefix, segments)
+                changed = True
+                break
+        if not changed:
+            break
+        m = measure_article(html, metro, town)
+    return html
+
+
+def repair_article(html: str, row: dict, siblings: list[dict],
+                   model: str, call=call_groq_text) -> str:
+    """Measure-and-repair a generated draft before it is stored.
+
+    Order: inject sibling links → up to 2 expansion rounds for
+    deficient service sections / FAQ answers → trim backstop if the
+    body overshoots the ceiling → top-up if it is still under the
+    floor. Every step re-measures with the gate's own counters.
+    """
+    metro, town = row["metro_slug"], row["town_slug"]
+    html = inject_sibling_links(html, row, siblings)
+    m = measure_article(html, metro, town)
+    print(f"  repair pass: draft {m['total']} words, "
+          f"{len(m['siblings'])} sibling links")
+    if not m["aligned"]:
+        print("  repair pass: section alignment mismatch — skipping "
+              "splice-based repair (gate will judge the raw draft)")
+        return html
+
+    for rnd in (1, 2):
+        m = measure_article(html, metro, town)
+        bad_secs = {k: s for k, s in m["services"].items()
+                    if s["words"] < SEC_MIN}
+        bad_faqs = [i for i, f in enumerate(m["faqs"])
+                    if f["words"] < FAQ_MIN]
+        under_total = m["total"] < BODY_FLOOR + 50
+        if not bad_secs and not bad_faqs and not under_total:
+            break
+        sec_t, faq_t = _budgeted_targets(m)
+        print(f"  round {rnd}: {len(bad_secs)} short sections, "
+              f"{len(bad_faqs)} short FAQ answers, total {m['total']} "
+              f"(targets: sections {sec_t}, FAQ {faq_t})")
+        prefix, segments = split_article(html)
+        for key, s in bad_secs.items():
+            seg = segments[s["index"]]
+            try:
+                new_body = expand_service_section(
+                    seg, sec_t, sec_t + 30, row, model, call)
+            except Exception as e:  # noqa: BLE001 — keep original on failure
+                print(f"    {key}: expansion call failed ({e})")
+                new_body = None
+            if new_body:
+                segments[s["index"]]["body"] = "\n" + new_body + "\n"
+                print(f"    {key}: {s['words']} → "
+                      f"{gate.words(_strip(new_body))} words")
+        html = join_article(prefix, segments)
+        for i in bad_faqs:
+            m_now = measure_article(html, metro, town)
+            if i >= len(m_now["faqs"]):
+                break
+            try:
+                new_text = expand_faq_answer(
+                    m_now["faqs"][i], faq_t, faq_t + 12, row, model, call)
+            except Exception as e:  # noqa: BLE001
+                print(f"    FAQ {i}: expansion call failed ({e})")
+                new_text = None
+            if new_text:
+                html = _replace_faq_answer(html, i, new_text)
+                print(f"    FAQ {i}: {m_now['faqs'][i]['words']} → "
+                      f"{gate.words(new_text)} words")
+
+    # Trim backstop: expansions overshot the body ceiling.
+    html = _enforce_ceiling(html, metro, town)
+
+    # Top-up backstop: still under the body floor after both rounds.
+    m = measure_article(html, metro, town)
+    if m["total"] < BODY_FLOOR:
+        print(f"  top-up: total {m['total']} under the {BODY_FLOOR} floor")
+        prefix, segments = split_article(html)
+        longest = sorted(m["services"].items(),
+                         key=lambda kv: kv[1]["words"], reverse=True)
+        for key, s in longest[:3]:
+            if m["total"] >= BODY_FLOOR:
+                break
+            seg = segments[s["index"]]
+            try:
+                new_body = expand_service_section(
+                    seg, 300, 350, row, model, call)
+            except Exception as e:  # noqa: BLE001
+                print(f"    {key}: top-up call failed ({e})")
+                new_body = None
+            if new_body:
+                segments[s["index"]]["body"] = "\n" + new_body + "\n"
+                m = measure_article(join_article(prefix, segments),
+                                    metro, town)
+        html = join_article(prefix, segments)
+        # A top-up can overshoot the ceiling; trim again if it did.
+        html = _enforce_ceiling(html, metro, town)
+
+    m = measure_article(html, metro, town)
+    short_secs = [f"{k}: {s['words']}" for k, s in m["services"].items()
+                  if not SEC_MIN <= s["words"] <= SEC_MAX]
+    short_faqs = [f"{f['words']}" for f in m["faqs"]
+                  if not FAQ_MIN <= f["words"] <= FAQ_MAX]
+    print(f"  repair pass done: {m['total']} words "
+          f"(gate {BODY_FLOOR}–{BODY_CEIL}), "
+          f"{len(m['siblings'])} sibling links, "
+          f"sections out of range: {short_secs or 'none'}, "
+          f"FAQ answers out of range: {short_faqs or 'none'}")
+    return html
 
 
 def main() -> None:
@@ -326,6 +925,17 @@ def main() -> None:
     if not html or not isinstance(omission, dict):
         print("GROK RETURNED UNUSABLE OUTPUT", file=sys.stderr)
         raise SystemExit(1)
+
+    # Measure-and-repair: the model under-writes sections/FAQs and
+    # skips sibling links (run #13), so fix the draft up to gate shape
+    # here. A repair failure must not lose the draft — store it raw
+    # and let the validation gate judge it.
+    try:
+        html = repair_article(html, row, fetch_siblings(sb, row),
+                              args.model)
+    except Exception as e:  # noqa: BLE001
+        print(f"REPAIR PASS FAILED ({e}) — storing raw draft",
+              file=sys.stderr)
 
     sb.table("towns").update({
         "page_html": html,

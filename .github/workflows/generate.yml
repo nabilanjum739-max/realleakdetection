@@ -55,7 +55,7 @@ jobs:
           --metro "${{ inputs.metro }}"
           --town "${{ inputs.town }}"
 
-      - name: Validation gate (11 checks — fail stops the job)
+      - name: Validation gate (17 checks — fail stops the job)
         run: >
           python scripts/validate.py
           --metro "${{ inputs.metro }}"

@@ -21,8 +21,30 @@ from pathlib import Path
 
 from common import PROJECT_ROOT, RESEARCH_COLUMNS, get_supabase, get_town_row
 
-# The Next.js site lives under site/ (schema builder: site/lib/schema.ts).
+# The Next.js site lives at the REPO ROOT in git (schema builder:
+# lib/schema.ts — the Actions runner checks the repo out with scripts/
+# at its root, so the builder is scripts/../lib/schema.ts). The local
+# workspace keeps its copy of the app under site/ instead, so resolve
+# the builder by trying the repo-root layout first, then site/.
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
 SITE_DIR = PROJECT_ROOT / "site"
+
+
+def schema_builder_path(root: Path | None = None) -> Path:
+    """Locate the site's schema builder (lib/schema.ts).
+
+    Prefers <root>/lib/schema.ts (repo layout, what the gate runs
+    against in Actions); falls back to <root>/site/lib/schema.ts
+    (local workspace layout). Returns the repo-layout path when
+    neither exists, so the failure detail names the expected file.
+    """
+    root = root if root is not None else REPO_ROOT
+    for cand in (root / "lib" / "schema.ts",
+                 root / "site" / "lib" / "schema.ts"):
+        if cand.exists():
+            return cand
+    return root / "lib" / "schema.ts"
 
 # ---- mirrors site/lib/site.ts buildTitle/buildMetaDescription (TEMPLATE.md §1)
 def build_title(town: str) -> str:
@@ -305,8 +327,8 @@ def main() -> None:
 
     # 10. schema: all six types present in the site's schema builder
     # (Service + Organization replaced LocalBusiness per the pre-launch plan)
-    schema_file = SITE_DIR / "lib" / "schema.ts"
-    schema_ok, schema_detail = False, "site/lib/schema.ts missing"
+    schema_file = schema_builder_path()
+    schema_ok, schema_detail = False, "lib/schema.ts missing"
     if schema_file.exists():
         src = schema_file.read_text()
         need = ["Service", "Organization", "FAQPage", "HowTo",
