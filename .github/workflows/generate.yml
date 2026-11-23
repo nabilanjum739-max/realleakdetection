@@ -51,6 +51,7 @@ jobs:
           --town "${{ inputs.town }}"
 
       - name: Generate page with Groq (grounded, TEMPLATE.md prompt)
+        timeout-minutes: 45
         run: >
           python scripts/generate.py
           --metro "${{ inputs.metro }}"

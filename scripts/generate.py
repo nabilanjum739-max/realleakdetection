@@ -304,6 +304,7 @@ MAX_429_RETRIES = 4          # retries per call after the first attempt
 BACKOFF_BASE_S = 15          # 15s → 30s → 60s → 120s when no Retry-After
 RETRY_AFTER_CAP_S = 300      # never sleep longer than this on one retry
 BAD_RESPONSE_RETRIES = 3     # retries when Groq answers 200 but empty/garbled (run #16)
+QUOTA_RETRY_AFTER_S = 600    # Retry-After above this = daily quota gone, fail fast (run #19)
 
 
 def _retry_after_seconds(response) -> float | None:
@@ -346,8 +347,19 @@ def call_groq_text(system: str, user: str, model: str) -> str:
             "max_tokens": 32000,
         }, timeout=300)
         if r.status_code == 429 and retries < MAX_429_RETRIES:
+            ra = _retry_after_seconds(r)
+            if ra is not None and ra > QUOTA_RETRY_AFTER_S:
+                # A Retry-After of many minutes means the free tier's
+                # DAILY quota is gone, not the per-minute limit — run
+                # #19 crawled for ~2 hours because every repair call
+                # burned its full backoff against a dead quota. Fail
+                # the call fast; the run ends in minutes with a clear
+                # log instead of hanging until the job timeout.
+                raise RuntimeError(
+                    f"Groq daily quota exhausted (Retry-After "
+                    f"{ra:g}s) — try again after the quota resets")
             retries += 1
-            wait = _retry_after_seconds(r)
+            wait = ra
             if wait is None:
                 wait = BACKOFF_BASE_S * (2 ** (retries - 1))
             wait = min(max(wait, 1), RETRY_AFTER_CAP_S)
