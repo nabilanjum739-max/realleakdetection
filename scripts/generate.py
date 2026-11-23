@@ -303,6 +303,7 @@ def build_user_message(row: dict, sb=None) -> str:
 MAX_429_RETRIES = 4          # retries per call after the first attempt
 BACKOFF_BASE_S = 15          # 15s → 30s → 60s → 120s when no Retry-After
 RETRY_AFTER_CAP_S = 300      # never sleep longer than this on one retry
+BAD_RESPONSE_RETRIES = 3     # retries when Groq answers 200 but empty/garbled (run #16)
 
 
 def _retry_after_seconds(response) -> float | None:
@@ -332,6 +333,7 @@ def call_groq_text(system: str, user: str, model: str) -> str:
     if not key:
         raise RuntimeError("GROQ_API_KEY is not set")
     retries = 0
+    bad = 0
     while True:
         r = requests.post(API_URL, headers={
             "Authorization": f"Bearer {key}",
@@ -343,20 +345,38 @@ def call_groq_text(system: str, user: str, model: str) -> str:
             "temperature": 0.4,
             "max_tokens": 32000,
         }, timeout=300)
-        if r.status_code != 429 or retries >= MAX_429_RETRIES:
-            r.raise_for_status()
-            break
-        retries += 1
-        wait = _retry_after_seconds(r)
-        if wait is None:
-            wait = BACKOFF_BASE_S * (2 ** (retries - 1))
-        wait = min(max(wait, 1), RETRY_AFTER_CAP_S)
-        print(f"    Groq 429 rate limit — retry {retries}/"
-              f"{MAX_429_RETRIES} after {wait:g}s")
-        time.sleep(wait)
-    content = r.json()["choices"][0]["message"]["content"]
-    return re.sub(r"^```(?:json|html)?|```$", "", content.strip(),
-                  flags=re.MULTILINE).strip()
+        if r.status_code == 429 and retries < MAX_429_RETRIES:
+            retries += 1
+            wait = _retry_after_seconds(r)
+            if wait is None:
+                wait = BACKOFF_BASE_S * (2 ** (retries - 1))
+            wait = min(max(wait, 1), RETRY_AFTER_CAP_S)
+            print(f"    Groq 429 rate limit — retry {retries}/"
+                  f"{MAX_429_RETRIES} after {wait:g}s")
+            time.sleep(wait)
+            continue
+        r.raise_for_status()
+        # Run #16: Groq can answer 200 with an empty body, a non-JSON
+        # body, or a message whose content is empty — r.json() then
+        # raises "Expecting value: line 1 column 1 (char 0)" and the
+        # whole run dies. Treat an empty/unparseable response as a
+        # retryable bad response instead of a fatal error.
+        try:
+            raw = r.json()["choices"][0]["message"]["content"]
+        except (ValueError, KeyError, IndexError, TypeError):
+            raw = ""
+        cleaned = re.sub(r"^```(?:json|html)?|```$", "", (raw or "").strip(),
+                         flags=re.MULTILINE).strip()
+        if cleaned:
+            return cleaned
+        bad += 1
+        if bad > BAD_RESPONSE_RETRIES:
+            raise RuntimeError(
+                f"Groq returned empty/unparseable content "
+                f"{BAD_RESPONSE_RETRIES + 1} times in a row")
+        print(f"    Groq returned empty/unparseable content — retry "
+              f"{bad}/{BAD_RESPONSE_RETRIES} after 20s")
+        time.sleep(20)
 
 
 def call_llm(system: str, user: str, model: str) -> dict:
@@ -372,7 +392,20 @@ def call_llm(system: str, user: str, model: str) -> dict:
                         "parse_note": "omission JSON malformed"}
         return {"html": html, "omission_log": omission}
     # Fallback: legacy JSON object format
-    return json.loads(content)
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # Run #16 salvage: the model sometimes returns the article as
+        # raw HTML without the <ARTICLE> tags. That is a judgeable
+        # draft, not a fatal error — the repair pass and the gate will
+        # shape and judge it. Only a non-JSON, non-HTML reply is fatal.
+        if "<p>" in content or "<h2" in content or "<h3" in content:
+            return {"html": content,
+                    "omission_log": {"used": [], "blank": [],
+                                     "skipped_sections": [],
+                                     "parse_note": "salvaged raw HTML "
+                                     "without ARTICLE/OMISSION tags"}}
+        raise
 
 
 # =====================================================================
@@ -1411,12 +1444,24 @@ def main() -> None:
     row = get_town_row(sb, args.metro, args.town)
     print(f"generating {row['town']} ({args.metro}) with {args.model} …")
 
-    try:
-        out = call_llm(SYSTEM_PROMPT, build_user_message(row, sb), args.model)
-        html, omission = out["html"], out["omission_log"]
-    except Exception as e:  # noqa: BLE001
-        print(f"GROK CALL FAILED: {e}", file=sys.stderr)
+    # The model occasionally returns an unusable reply (run #16:
+    # empty content killed the run in 21s). Retry the whole call a
+    # couple of times before giving up — a fresh call usually lands
+    # in the tagged format.
+    out = None
+    for attempt in range(3):
+        try:
+            out = call_llm(SYSTEM_PROMPT, build_user_message(row, sb),
+                           args.model)
+            break
+        except Exception as e:  # noqa: BLE001
+            print(f"GROK CALL FAILED (attempt {attempt + 1}/3): {e}",
+                  file=sys.stderr)
+            if attempt < 2:
+                time.sleep(20)
+    if out is None:
         raise SystemExit(1)
+    html, omission = out["html"], out["omission_log"]
 
     if not html or not isinstance(omission, dict):
         print("GROK RETURNED UNUSABLE OUTPUT", file=sys.stderr)
