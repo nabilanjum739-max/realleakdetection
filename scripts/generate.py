@@ -59,14 +59,16 @@ SYSTEM_PROMPT = """You are a local-service copywriter. You receive ONE JSON obje
    section must grow, another must shrink. Priority order for words:
    services → N2 symptom table → N5 pricing table → N6 insurance → N1
    local factor → N3 neighbourhoods → FAQ → everything else. The section
-   targets in the template below sum to ~4,080 at minimum service/FAQ
+   targets in the template below sum to ~4,100 at minimum service/FAQ
    sizes — there is NO slack: keep services near 200 words each and the
-   FAQ at 12 Q&As unless you cut elsewhere first. If you are over budget,
+   FAQ at exactly 13 Q&As unless you cut elsewhere first. If you are over budget,
    cut in this order first: N12, N10, N9, N7, N4, N8.
    NEVER cut a service section below 200 words, never cut the N2 or N5
-   tables, never cut the FAQ below 12 Q&As.
+   tables, never cut the FAQ below 13 Q&As.
    LENGTH MINIMUMS (mechanical — a validator counts every word): each of
-   the 10 service sections ≥200 words; each FAQ answer ≥50 words; the
+   the 10 service sections ≥200 words; the FAQ contains EXACTLY 13
+   Q&As (the count is mechanical too — 12 or fewer risks failing the
+   page on a short count); each FAQ answer ≥50 words; the
    article body ≥3,700 words in total. These minimums are stated again
    in the template because under-length sections are the most common
    failure: when many sections compete, do NOT compress the later ones
@@ -208,13 +210,16 @@ TEMPLATE — write these sections as one <article> of clean HTML:
     ~25 words.
 17. Property managers & home buyers <h2>: two short audience blocks.
     ~40 words.
-18. FAQ <h2>: 12–15 questions, each answer 50–70 words, direct answer in
-    sentence one. 50 words per answer is a HARD MINIMUM (repeated from
-    rule 7): an answer under 50 words mechanically fails validation.
+18. FAQ <h2>: EXACTLY 13 questions — count them as you write and stop
+    at 13; the count is a HARD mechanical requirement, not a range
+    (run #15 wrote 11 and failed validation on the count alone). Each
+    answer 50–70 words, direct answer in sentence one.
+    50 words per answer is a HARD MINIMUM (repeated from rule 7): an answer under 50 words mechanically fails validation.
     The set MUST include at least one question about cost or
     price and at least one about homeowners insurance coverage. Wrap as
-    <div class="faq"><h3>Q…</h3><p>A…</p>…</div>. Prefer 12 Q&As — the
-    budget only fits 12–13 at 50–60 words each (~600 words).
+    <div class="faq"><h3>Q…</h3><p>A…</p>…</div>. 13 Q&As at 50–60
+    words each is ~700 words; rule 9's budget is planned around
+    exactly 13.
 19. Final CTA: call button + "serving {neighborhoods short list}".
 20. Do NOT write schema/JSON-LD (the site template adds it), do NOT write
     <title> or meta description (the site builds those from data fields).
@@ -392,11 +397,27 @@ def call_llm(system: str, user: str, model: str) -> dict:
 # answers per call), paces calls a few seconds apart, and
 # call_groq_text retries 429s with backoff — a round costs ~6 calls
 # instead of ~22.
+#
+# Run #15 proved the length repair works (3,796 → 4,044 words, all
+# sections and answers in range, 15/17 checks) but exposed two count
+# variances: the model wrote 11 FAQ Q&As (gate needs 12–15) and only
+# 2 in-article pillar links (gate needs ≥4 distinct /services/…
+# slugs). Both are now killed deterministically, the same way
+# sibling links were: the prompt demands EXACTLY 13 Q&As and the
+# repair pass tops the FAQ count up to 13 in one batched call when
+# it lands under 12, and pillar links are injected programmatically
+# (first natural mention of each service's name inside its own
+# section, wrapped in an anchor; a short "More on …" line when a
+# section never names itself).
 # =====================================================================
 import validate as gate  # same directory; gate logic is the source of truth
 
 SEC_MIN, SEC_MAX = 200, 400        # gate check 3b
 FAQ_MIN, FAQ_MAX = 50, 80          # gate check 5
+FAQ_COUNT_FLOOR = 12               # gate check 5: 12–15 Q&As
+FAQ_COUNT_TARGET = 13              # prompt demands exactly 13; the
+                                   # repair top-up aims here so one
+                                   # malformed Q&A can't sink the page
 BODY_FLOOR, BODY_CEIL = gate.BODY_MIN, gate.BODY_MAX   # gate check 12
 TOTAL_AIM = 3900                   # land mid-band, not on an edge
 TOTAL_SOFT_MAX = 4050              # trim backstop engages above this
@@ -450,12 +471,24 @@ def join_article(prefix: str, segments: list[dict]) -> str:
     return prefix + "".join(s["h2_html"] + s["body"] for s in segments)
 
 
+def _pillar_slugs_in(html: str) -> set:
+    """Distinct /services/… slugs linked in the article — exactly what
+    gate check 11 counts."""
+    slugs = set()
+    for h in re.findall(r'href="([^"]+)"', html):
+        m = re.search(r"/services/([a-z0-9-]+)/?$", h)
+        if m:
+            slugs.add(m.group(1))
+    return slugs
+
+
 def measure_article(html: str, metro: str, town: str) -> dict:
     """Measure a draft with the gate's own parser and counters.
 
     Returns total words, per-service-section word counts (with the
     segment index to splice), FAQ answer word counts, and the sibling
-    link count — exactly as validate.py checks 3b/5/11/12 see them.
+    and pillar link counts — exactly as validate.py checks 3b/5/11/12
+    see them.
     """
     parser = gate.SectionParser()
     parser.feed(html)
@@ -479,6 +512,7 @@ def measure_article(html: str, metro: str, town: str) -> dict:
         "faqs": [{"q": q, "words": gate.words(a)}
                  for q, a in parser.faq_qas],
         "siblings": sibs,
+        "pillars": _pillar_slugs_in(html),
         "aligned": aligned,
     }
 
@@ -740,6 +774,119 @@ def expand_faq_batch(faqs: list[dict], lo: int, hi: int, row: dict,
     return results
 
 
+def _text_rejected(text: str) -> str | None:
+    """Banned-phrase / banned-claims guard for short plain texts
+    (questions, single answers) — _expansion_rejected's length and
+    structure checks don't apply to them."""
+    low = text.lower()
+    bad = [p for p in gate.BANNED_PHRASES if p in low]
+    if bad:
+        return f"AI-tell phrase(s): {bad}"
+    claims = [label for label, pat in gate.BANNED_CLAIMS
+              if pat.search(low)]
+    if claims:
+        return f"banned claim(s): {claims}"
+    return None
+
+
+def _parse_qa_blocks(text: str, count: int) -> dict:
+    """Extract <<<QA n>>> QUESTION:/ANSWER: blocks → {n: (q, a)}."""
+    out = {}
+    for n in range(1, count + 1):
+        m = re.search(
+            rf"<<<QA {n}>>>\s*QUESTION:\s*(.+?)\s*ANSWER:\s*(.+?)"
+            rf"\s*<<<END QA {n}>>>", text, re.DOTALL)
+        if m:
+            out[n] = (re.sub(r"\s+", " ", m.group(1)).strip(),
+                      re.sub(r"\s+", " ", _strip(m.group(2))).strip())
+    return out
+
+
+def generate_faq_topups(existing_qs: list[str], need: int, row: dict,
+                        model: str, call) -> list:
+    """ONE batched call writing `need` brand-new FAQ Q&As.
+
+    Run #15's draft had 11 Q&As against the gate's 12–15 — pure model
+    count variance. The new pairs must be natural homeowner questions
+    NOT already in the article, grounded only in the town row, with
+    answers of 55–75 words in the same shape as the existing Q&As.
+    Every returned pair passes deterministic guards (duplicate of an
+    existing question, off-length answer, banned words, any $ figure
+    — top-up answers never introduce pricing); pairs that fail are
+    dropped, so the result may be shorter than `need`.
+    """
+    have = "\n".join(f"- {q}" for q in existing_qs) or "- (none)"
+    markers = "\n".join(
+        f"<<<QA {n}>>>\nQUESTION: <the question>\n"
+        f"ANSWER: <the answer>\n<<<END QA {n}>>>"
+        for n in range(1, need + 1))
+    user = (
+        "TOWN DATA — the only source of local facts:\n"
+        f"{_grounding_json(row)}\n\n"
+        "The FAQ section of this town guide already answers these "
+        "questions — do NOT repeat, rephrase or overlap any of them:\n"
+        f"{have}\n\n"
+        f"Write {need} NEW question-and-answer pairs for that FAQ. "
+        "Pick natural homeowner questions from topics like: whether a "
+        "permit is needed for the repair that follows detection, how "
+        "to prepare the home before a detection visit, how long "
+        "detection takes, what happens right after a leak is "
+        "pinpointed, what a renter should do versus a homeowner, how "
+        "to re-check the water meter afterwards. Each answer: 55–75 "
+        "words of plain text (no HTML, no markdown), a direct answer "
+        "in the first sentence, then the reasoning and one concrete "
+        "action the homeowner can take. Ground every local detail in "
+        "the data above; where the data says nothing, keep the answer "
+        "general and say what to check locally. No prices and no $ "
+        "figures anywhere. Return ONLY the pairs, each wrapped "
+        "EXACTLY in the markers shown:\n"
+        f"{markers}")
+    blocks = _parse_qa_blocks(call(EXPAND_SYSTEM, user, model), need)
+    seen = {re.sub(r"[^a-z0-9]+", " ", q.lower()).strip()
+            for q in existing_qs}
+    pairs = []
+    for n in range(1, need + 1):
+        if n not in blocks:
+            print(f"    FAQ top-up {n}: missing from batch output")
+            continue
+        q, a = blocks[n]
+        norm = re.sub(r"[^a-z0-9]+", " ", q.lower()).strip()
+        reason = None
+        if not q.endswith("?") or gate.words(q) < 3 or "<" in q:
+            reason = "malformed question"
+        elif norm in seen or any(norm in s or s in norm for s in seen):
+            reason = "duplicates an existing question"
+        elif _text_rejected(q):
+            reason = _text_rejected(q)
+        elif not FAQ_MIN <= gate.words(a) <= FAQ_MAX:
+            reason = f"answer {gate.words(a)} words (need 50–80)"
+        elif "$" in a:
+            reason = "answer introduces a $ figure"
+        elif _expansion_rejected(a, service=False, original_html=""):
+            reason = _expansion_rejected(a, service=False,
+                                         original_html="")
+        if reason:
+            print(f"    FAQ top-up {n} rejected ({reason})")
+            continue
+        seen.add(norm)
+        pairs.append((q, a))
+    return pairs
+
+
+def append_faq_qas(html: str, pairs: list) -> str:
+    """Append (question, answer) pairs inside the FAQ div, in the
+    exact <h3>Q</h3><p>A</p> shape gate check 5 parses."""
+    span = _faq_span(html)
+    if not span or not pairs:
+        return html
+    close = html.rfind("</div>", span[0], span[1])
+    if close < 0:
+        return html
+    block = "".join(f"<h3>{_html_escape(q)}</h3>"
+                    f"<p>{_html_escape(a)}</p>" for q, a in pairs)
+    return html[:close] + block + html[close:]
+
+
 def inject_sibling_links(html: str, row: dict,
                          siblings: list[dict]) -> str:
     """Programmatically add sibling-town links (gate check 11).
@@ -783,18 +930,141 @@ def inject_sibling_links(html: str, row: dict,
     return html + "\n" + para
 
 
+# Anchor phrases per service key (gate.SERVICE_H2_KEYS maps 1:1 onto
+# SERVICE_PILLARS). The first phrase — in reading order — found in a
+# section's body is the one wrapped; longer phrases win ties so the
+# anchor is the full service name where the text offers it.
+PILLAR_ANCHORS = {
+    "slab leak": ["slab leak detection", "slab leaks", "slab leak"],
+    "yard line": ["yard line leak detection", "yard line",
+                  "underground line"],
+    "water main": ["water main leak detection", "water main"],
+    "sewer line": ["sewer line leak detection", "sewer lines",
+                   "sewer line"],
+    "sewer camera": ["sewer camera inspection", "camera inspection",
+                     "sewer camera"],
+    "septic": ["septic tank leak detection", "septic tank",
+               "septic system", "septic"],
+    "gas line": ["gas line leak detection", "gas lines", "gas line"],
+    "pool leak": ["pool leak detection", "pool leaks", "pool leak"],
+    "tankless": ["tankless water heater leak detection",
+                 "tankless water heater", "tankless unit", "tankless"],
+    "sprinkler": ["irrigation / sprinkler leak detection",
+                  "sprinkler leak detection",
+                  "irrigation leak detection", "sprinkler system",
+                  "sprinkler", "irrigation"],
+}
+
+
+def _link_first_mention(body: str, phrases: list[str],
+                        url: str) -> str | None:
+    """Wrap the first natural mention of any phrase in an anchor.
+
+    Walks the body's <p> blocks in order; inside a block it walks
+    text chunks (tags split out) tracking <a> nesting, so an existing
+    link is never nested or broken and no tag is ever cut. Protected
+    blocks are skipped: the 911 safety text and the injected
+    nearby-guides / pillar-more paragraphs. Anchor text is the
+    existing words, unchanged. Returns the new body, or None when no
+    matchable mention exists.
+    """
+    for pm in re.finditer(r"<p\b[^>]*>.*?</p>", body, re.DOTALL | re.I):
+        block = pm.group(0)
+        if ("911" in _strip(block) or "nearby-guides" in block
+                or "pillar-more" in block):
+            continue
+        m = re.match(r"(<p\b[^>]*>)(.*)(</p>)\s*$", block,
+                     re.DOTALL | re.I)
+        if not m:
+            continue
+        chunks = re.split(r"(<[^>]+>)", m.group(2))
+        depth = 0
+        for ci, chunk in enumerate(chunks):
+            if chunk.startswith("<"):
+                tag = chunk.lower()
+                if re.match(r"<a\b", tag):
+                    depth += 1
+                elif tag.startswith("</a"):
+                    depth = max(0, depth - 1)
+                continue
+            if depth:
+                continue
+            best = None  # (position, -length, phrase)
+            for phrase in phrases:
+                hit = re.search(r"\b" + re.escape(phrase) + r"\b",
+                                chunk.lower())
+                if hit:
+                    cand = (hit.start(), -len(phrase), phrase)
+                    if best is None or cand < best:
+                        best = cand
+            if best:
+                pos, _, phrase = best
+                matched = chunk[pos:pos + len(phrase)]
+                chunks[ci] = (chunk[:pos]
+                              + f'<a href="{url}">{matched}</a>'
+                              + chunk[pos + len(phrase):])
+                new_block = m.group(1) + "".join(chunks) + m.group(3)
+                return body[:pm.start()] + new_block + body[pm.end():]
+    return None
+
+
+def inject_pillar_links(html: str, row: dict) -> str:
+    """Programmatically link service pillar pages (gate check 11).
+
+    The model linked only 2 of the 10 pillars in run #15 despite
+    being given the targets — the same variance that sibling
+    injection fixed for town links. For each service section whose
+    pillar is not yet linked anywhere in the article, wrap the first
+    natural mention of the service's name inside its own section; a
+    section that never names itself gets one short "More on …" line
+    appended (class pillar-more, protected from the trim backstop).
+    Targets all 10; the gate needs ≥4 distinct.
+    """
+    m = measure_article(html, row["metro_slug"], row["town_slug"])
+    have = set(m["pillars"])
+    if len(have) >= len(SERVICE_PILLARS) or not m["aligned"]:
+        return html
+    prefix, segments = split_article(html)
+    for key, (_name, url) in zip(gate.SERVICE_H2_KEYS, SERVICE_PILLARS):
+        slug = url.rstrip("/").rsplit("/", 1)[-1]
+        if slug in have:
+            continue
+        svc = m["services"].get(key)
+        if svc is None:
+            continue
+        seg = segments[svc["index"]]
+        new_body = _link_first_mention(seg["body"],
+                                       PILLAR_ANCHORS[key], url)
+        if new_body is None:
+            new_body = (seg["body"]
+                        + f'\n<p class="pillar-more">More on '
+                          f'<a href="{url}">'
+                          f'{PILLAR_ANCHORS[key][0]}</a>.</p>')
+            print(f"    {key}: no mention to wrap — appended "
+                  "'More on' line")
+        if new_body != seg["body"]:
+            seg["body"] = new_body
+            have.add(slug)
+    print(f"  pillar links: {len(have)} of {len(SERVICE_PILLARS)} "
+          "pillar pages linked in the article")
+    return join_article(prefix, segments)
+
+
 def _trim_section_body(body: str, target_words: int,
                        floor: int = 0) -> str:
     """Drop trailing <p> blocks until the body fits (never tables, never
-    a block containing '911', never the injected nearby-guides
-    paragraph, always keep at least one paragraph, and never drop a
+    a block containing '911', never the injected nearby-guides or
+    pillar-more paragraphs, never a paragraph carrying a /services/
+    pillar link, always keep at least one paragraph, and never drop a
     paragraph that would take the body under `floor`)."""
     while gate.words(_strip(body)) > target_words:
         paras = list(re.finditer(r"<p\b[^>]*>.*?</p>", body,
                                  re.DOTALL | re.I))
         removable = [m for m in paras
                      if "911" not in _strip(m.group(0))
-                     and "nearby-guides" not in m.group(0)]
+                     and "nearby-guides" not in m.group(0)
+                     and "pillar-more" not in m.group(0)
+                     and 'href="/services/' not in m.group(0)]
         if len(paras) <= 1 or not removable:
             break
         m = removable[-1]
@@ -985,12 +1255,19 @@ def repair_article(html: str, row: dict, siblings: list[dict],
                    model: str, call=call_groq_text) -> str:
     """Measure-and-repair a generated draft before it is stored.
 
-    Order: inject sibling links → up to 2 expansion rounds for
-    deficient service sections / FAQ answers → trim backstop if the
-    body overshoots the ceiling → top-up if it is still under the
-    floor. Every step re-measures with the gate's own counters.
-    Expansion calls are batched and paced (run #14: ~44 unpaced calls
-    all bounced off Groq's per-minute 429 limit).
+    Order: inject sibling links → FAQ count top-up (one batched call,
+    only when the count landed under the gate floor) → up to 2
+    expansion rounds for deficient service sections / FAQ answers →
+    pillar-link injection → trim backstop if the body overshoots the
+    ceiling → top-up if it is still under the floor. Every step
+    re-measures with the gate's own counters. Expansion calls are
+    batched and paced (run #14: ~44 unpaced calls all bounced off
+    Groq's per-minute 429 limit). The FAQ top-up runs before the
+    rounds so a short appended answer can still be expanded, and
+    before the ceiling backstop so its words are counted there;
+    pillar injection runs after the rounds so an expansion cannot
+    strip the anchors, and before the backstop so any appended
+    "More on" words are counted there too.
     """
     metro, town = row["metro_slug"], row["town_slug"]
     html = inject_sibling_links(html, row, siblings)
@@ -1011,6 +1288,25 @@ def repair_article(html: str, row: dict, siblings: list[dict],
             time.sleep(REPAIR_PACE_S)
         made["n"] += 1
         return call(system, user, model)
+
+    # FAQ count top-up (run #15: 11 Q&As against the gate's 12–15).
+    # One batched call, appended into the FAQ div, aimed at
+    # FAQ_COUNT_TARGET so the count stops depending on the model's
+    # arithmetic. Runs before the expansion rounds and the ceiling.
+    m = measure_article(html, metro, town)
+    if len(m["faqs"]) < FAQ_COUNT_FLOOR:
+        need = FAQ_COUNT_TARGET - len(m["faqs"])
+        print(f"  FAQ count top-up: {len(m['faqs'])} Q&As — "
+              f"generating {need} more (target {FAQ_COUNT_TARGET})")
+        try:
+            pairs = generate_faq_topups(
+                [f["q"] for f in m["faqs"]], need, row, model, paced)
+        except Exception as e:  # noqa: BLE001 — gate judges the draft
+            print(f"    FAQ top-up call failed ({e})")
+            pairs = []
+        if pairs:
+            html = append_faq_qas(html, pairs)
+            print(f"    FAQ count top-up: added {len(pairs)} Q&As")
 
     for rnd in (1, 2):
         m = measure_article(html, metro, town)
@@ -1054,6 +1350,12 @@ def repair_article(html: str, row: dict, siblings: list[dict],
                         print(f"    FAQ {i}: {m_now['faqs'][i]['words']} "
                               f"→ {gate.words(new_text)} words")
 
+    # Pillar links (run #15: only 2 of 10 linked by the model; the
+    # gate needs ≥4 distinct). Deterministic injection, after the
+    # rounds so expansions can't strip the anchors, before the
+    # ceiling backstop so appended words are counted there.
+    html = inject_pillar_links(html, row)
+
     # Trim backstop: expansions overshot the body ceiling.
     html = _enforce_ceiling(html, metro, town)
 
@@ -1090,6 +1392,8 @@ def repair_article(html: str, row: dict, siblings: list[dict],
     print(f"  repair pass done: {m['total']} words "
           f"(gate {BODY_FLOOR}–{BODY_CEIL}), "
           f"{len(m['siblings'])} sibling links, "
+          f"{len(m['pillars'])} pillar links, "
+          f"{len(m['faqs'])} FAQ Q&As, "
           f"sections out of range: {short_secs or 'none'}, "
           f"FAQ answers out of range: {short_faqs or 'none'}")
     return html
