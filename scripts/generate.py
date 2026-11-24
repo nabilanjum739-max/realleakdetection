@@ -485,8 +485,8 @@ INSURANCE_QUESTION_KEYS = ("insurance", "claim", "covered")
 SWEEP_MAX_ITERS = 4                # final-sweep fix-measure bound
 SWEEP_ITEM_ATTEMPTS = 3            # dedicated attempts per deficient item
 BODY_FLOOR, BODY_CEIL = gate.BODY_MIN, gate.BODY_MAX   # gate check 12
-TOTAL_AIM = 3900                   # land mid-band, not on an edge
-TOTAL_SOFT_MAX = 4050              # trim backstop engages above this
+TOTAL_AIM = 4100                   # land mid-band, not on an edge
+TOTAL_SOFT_MAX = 4400              # trim backstop engages above this
 
 EXPAND_SYSTEM = """You expand ONE part of a local leak-detection town guide.
 You receive the town's data row (JSON) and the current text. Rules:

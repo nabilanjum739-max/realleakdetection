@@ -110,7 +110,7 @@ N_HEADINGS = [
 
 # Article-body budget (§3.3): hard cap, measured on the same article text
 # the prompt produces (all text inside <article>, tables + FAQ included).
-BODY_MIN, BODY_MAX = 3700, 4100
+BODY_MIN, BODY_MAX = 3700, 4500
 
 
 def tables(html: str) -> list[str]:
